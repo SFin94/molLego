@@ -58,6 +58,9 @@ def moleculesToDataFrame(molNames, molFiles, molecules, save=None):
             propDict.update({'E SCF': mol.escf*2625.5})
         data.append(propDict)
 
+        if hasattr(mol, 'parameters'):
+            propDict.update(self.parameters)
+
     molDF = pd.DataFrame(data, index=molNames)
 
     # Calculate the relative thermodynamic quantities
