@@ -14,8 +14,8 @@ def countAtoms(logFile):
     '''
 
     # Opens file and searches for line which contains the number of atoms in the system
-    with open(logFile, 'r') as logFile:
-        for el in logFile:
+    with open(logFile, 'r') as input:
+        for el in input:
             if 'NAtoms' in el:
                 numAtoms = int(el.split()[1])
 
@@ -42,15 +42,15 @@ def pullGeom(logFile, optStep=1):
     numAtoms = countAtoms(logFile)
     atomCoords = np.zeros((numAtoms, 3))
 
-    with open(logFile, 'r') as logFile:
-        for el in logFile:
+    with open(logFile, 'r') as input:
+        for el in input:
 
             if 'Standard orientation:' in el:
                 # Skip the header section of the standard orientation block
-                [logFile.__next__() for x in range(0,4)]
+                [input.__next__() for x in range(0,4)]
                 # Read in the atomic coordinates, atom ID will be row index
                 for atom in range(numAtoms):
-                    el = logFile.__next__()
+                    el = input.__next__()
                     for jind in range(3):
                         atomCoords[atom, jind] = float(el.split()[jind+3])
 
@@ -69,7 +69,7 @@ def pullGeom(logFile, optStep=1):
 
 def pullEnergy(logFile, optStep=1, mp2=False,):
 
-    '''Function that pulls the geometry from a gaussian log file
+    '''Function that pulls the energy from a gaussian log file
 
         Parameters:
          logFile: str - name of the input log file
@@ -83,8 +83,8 @@ def pullEnergy(logFile, optStep=1, mp2=False,):
 
     optCount = 0
     optimised = False
-    with open(logFile, 'r') as logFile:
-        for el in logFile:
+    with open(logFile, 'r') as input:
+        for el in input:
 
             # NB: SCF Done precede the corresponding optimisation section
             if 'SCF Done:' in el:
@@ -110,7 +110,7 @@ def pullEnergy(logFile, optStep=1, mp2=False,):
 
 def pullThermo(logFile, eSCF=0):
 
-    '''Function which scans a Gaussian Freq log file for thermodynamic information
+    '''Function which pulls thermodynamic information from a gaussian Freq log file
 
         Parameters:
          logFile - str; file name of the .log file to be read
@@ -128,17 +128,17 @@ def pullThermo(logFile, eSCF=0):
         eSCF = pullEnergy(logFile)[0]
 
     # Open the file
-    with open(logFile) as file:
+    with open(logFile) as input:
         # Search file for the thermodynamic data
-        for line in file:
+        for line in input:
             if 'Temperature ' in line:
                 temp = float(line[15:22])
             # Start the thermochemistry section, save  ZPE and thermal corrections for E, H and G
             if 'Zero-point correction= ' in line:
                 zpe = float(line[50:58])
-                tCorrE = float(next(file)[50:58])
-                tCorrH = float(next(file)[50:58])
-                tCorrG = float(next(file)[50:58])
+                tCorrE = float(next(input)[50:58])
+                tCorrH = float(next(input)[50:58])
+                tCorrG = float(next(input)[50:58])
 
     # Calculate the total entropy (S) and thermally corrected E, G and H
     totS = (tCorrH - tCorrG)/temp
@@ -150,8 +150,7 @@ def pullThermo(logFile, eSCF=0):
     return [value*2625.5 for value in [totE, totH, totG, totS, zpe]]
 
 
-
-def pullAtomIDs(logFile, ):
+def pullAtomIDs(logFile):
 
     '''Function that pulls the atom IDs from a gaussian log file
 
@@ -163,21 +162,70 @@ def pullAtomIDs(logFile, ):
     '''
 
     atomIDs = []
-    numAtoms = countAtoms(logFile)
+    numAtoms = countAtoms(file)
 
-    with open(logFile, 'r') as logFile:
-        for el in logFile:
+    with open(logFile, 'r') as input:
+        for el in input:
 
             # Sets atomIDs from initialising list of input structure
             if 'Charge = ' in el:
-                el = logFile.__next__()
+                el = input.__next__()
                 if ('No Z-Matrix' in el) or ('Redundant internal coordinates' in el):
-                    el = logFile.__next__()
+                    el = input.__next__()
                 for atom in range(numAtoms):
                     atomIDs.append(el.split()[0][0])
-                    el = logFile.__next__()
-            break
+                    el = input.__next__()
+                break
 
     return atomIDs
+
+
+def pullScanInfo(logFile):
+
+    '''Function that pulls information about a scan from a gaussian log file
+
+         Parameters:
+          logFile: str - name of the input log file
+
+         Returns:
+          scanInfo: dict -
+              {paramKey: str,
+                atomInd: list of ints,
+                nSteps: int,
+                stepSize': float}
+        Where, paramKey  is a string identifier of the modRed parameter type
+        NB: atomInd is pythonic
+     '''
+
+    # Types dictionary of the corresponding number of atom IDs required for each one
+    types = {'X': 1, 'B': 2, 'A': 3, 'D': 4}
+    modRedundant = []
+
+    # Opens and reads file, extracting the modRedundant input to a list (each modRed input line new object in list)
+    with open(logFile, 'r') as input:
+        for el in input:
+            if 'The following ModRedundant input section has been read:' in el:
+                el = input.__next__()
+                # Extracts the ModRedundant section
+                while el.strip() != '':
+                    modRedundant.append(el.strip().split())
+                    el = input.__next__()
+                break
+
+    # Iterates over the modRedundant inputs, finds the scan parameter and saves the input
+    for mR in modRedundant:
+        # Identifies number of atom IDs to expect and tests the action input for the scan parameter (assuming only one here, could have more)
+        numAtoms = types[mR[0]]
+        if mR[numAtoms+1] == 'S':
+            scanInfo = {'paramKey': mR[0], 'atomInd': [], 'nSteps': int(mR[-2]), 'stepSize': float(mR[-1])}
+            # NB: Have to deduct one from atom ind for python 0 indexing, real indexes stored in paramKey
+            for atomInd in mR[1:numAtoms+1]:
+                scanInfo['atomInd'].append(int(atomInd) - 1)
+                scanInfo['paramKey'] += (' ' + atomInd)
+    try:
+        return(scanInfo)
+    except NameError:
+        print('No scan parameter located')
+        raise
 
 
