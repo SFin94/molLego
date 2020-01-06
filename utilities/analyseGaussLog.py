@@ -162,7 +162,7 @@ def pullAtomIDs(logFile):
     '''
 
     atomIDs = []
-    numAtoms = countAtoms(file)
+    numAtoms = countAtoms(logFile)
 
     with open(logFile, 'r') as input:
         for el in input:
@@ -192,7 +192,7 @@ def pullScanInfo(logFile):
               {paramKey: str,
                 atomInd: list of ints,
                 nSteps: int,
-                stepSize': float}
+                stepSize: float}
         Where, paramKey  is a string identifier of the modRed parameter type
         NB: atomInd is pythonic
      '''
@@ -212,16 +212,23 @@ def pullScanInfo(logFile):
                     el = input.__next__()
                 break
 
+    # Gets the atom IDs for setting the parameter key
+    atomIDs = pullAtomIDs(logFile)
+    print(atomIDs)
     # Iterates over the modRedundant inputs, finds the scan parameter and saves the input
     for mR in modRedundant:
         # Identifies number of atom IDs to expect and tests the action input for the scan parameter (assuming only one here, could have more)
         numAtoms = types[mR[0]]
         if mR[numAtoms+1] == 'S':
-            scanInfo = {'paramKey': mR[0], 'atomInd': [], 'nSteps': int(mR[-2]), 'stepSize': float(mR[-1])}
-            # NB: Have to deduct one from atom ind for python 0 indexing, real indexes stored in paramKey
-            for atomInd in mR[1:numAtoms+1]:
+            scanInfo = {'paramKey': '', 'atomInd': [], 'nSteps': int(mR[-2]), 'stepSize': float(mR[-1])}
+            # Set paramKey and atom indexes (NB: deduct 1 for python indexing) of scan parameter
+            for atomInd in mR[1:numAtoms]:
                 scanInfo['atomInd'].append(int(atomInd) - 1)
-                scanInfo['paramKey'] += (' ' + atomInd)
+                scanInfo['paramKey'] += (atomIDs[int(atomInd) - 1] + atomInd + '-')
+            scanInfo['atomInd'].append(int(mR[numAtoms]) - 1)
+            scanInfo['paramKey'] += (atomIDs[int(mR[numAtoms]) - 1] + mR[numAtoms])
+            print(scanInfo)
+
     try:
         return(scanInfo)
     except NameError:
