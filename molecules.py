@@ -1,5 +1,6 @@
 import numpy as np
 import utilities.analyseGaussLog as glog
+import utilities.geom as geom
 
 '''
 Script containing class definitions for base class Molecule and sub class Thermomolecule
@@ -24,6 +25,20 @@ class Molecule():
         self.atoms = atomIDs
         self.numAtoms = len(atomIDs)
         self.atomCoords = molGeom
+
+    def setParameters(self, parameters):
+
+        '''Class function to set dict of parameters as additional attribute'''
+        paramKeys = list(parameters.keys())
+        paramValues = geom.calcParam(list(parameters.values()), self.atomCoords)
+        self.parameters = dict(zip(paramKeys, paramValues))
+
+    def setOptimised(optimised):
+
+        '''Class function to set optimiesd as additional attribute'''
+        self.optimised = optimised
+
+
 
 class MoleculeThermo(Molecule):
 
@@ -52,9 +67,9 @@ class MoleculeThermo(Molecule):
 #    super().__init__(logFile)
 
 
-def initMol(logFile, type='molecule'):
+def initMol(logFile, type='molecule', optStep=1):
 
-    '''Function that initiates a molecule or moleculeThermo object assuming that the final geometry is wanted (e.g. from an opt or freq calculation)
+    '''Function that initiates a molecule or moleculeThermo object from a gaussian log file assuming that the final geometry is wanted (e.g. from an opt or freq calculation)
 
     Parameters:
      logFile: str - name of the gaussian log file
@@ -66,8 +81,8 @@ def initMol(logFile, type='molecule'):
 
     # Parse all properties from gaussian log file - currently don't set optstep or mp2
     numAtoms = glog.countAtoms(logFile)
-    molEnergy = glog.pullEnergy(logFile)[0]
-    molGeom, optimised = glog.pullGeom(logFile)
+    molEnergy = glog.pullEnergy(logFile, optStep)[0]
+    molGeom, optimised = glog.pullGeom(logFile, optStep)
     atomIDs = glog.pullAtomIDs(logFile)
 
     # If thermochemistry wanted, parse additional information
