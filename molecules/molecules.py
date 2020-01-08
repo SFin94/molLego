@@ -39,7 +39,6 @@ class Molecule():
         self.optimised = optimised
 
 
-
 class MoleculeThermo(Molecule):
 
     '''Class attributes:

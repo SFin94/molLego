@@ -36,7 +36,7 @@ def constructMols(systemFile, type='molecule'):
     return molNames, molFile, molecules
 
 
-def moleculesToDataFrame(molNames, molFiles, molecules, save=None):
+def moleculesToDataFrame(molFiles, molecules, molNames=None, save=None):
 
     '''Function which creates a dataframe for all of the molecules and can write to a csv
     Parameters:
@@ -59,9 +59,12 @@ def moleculesToDataFrame(molNames, molFiles, molecules, save=None):
         data.append(propDict)
 
         if hasattr(mol, 'parameters'):
-            propDict.update(self.parameters)
+            propDict.update(mol.parameters)
 
-    molDF = pd.DataFrame(data, index=molNames)
+    if molNames != None:
+        molDF = pd.DataFrame(data, index=molNames)
+    else:
+        molDF = pd.DataFrame(data)
 
     # Calculate the relative thermodynamic quantities
     for q in quantity:
@@ -93,12 +96,12 @@ def parseTrackedParams(systemFile):
     # Initialise empty dict for params
     trackedParams = {}
     # Parse in file and seperate the indexes from the parameter ID and save as an entry to the dict
-    with open(inputFile, 'r') as input:
+    with open(systemFile, 'r') as input:
         for el in input:
             param = el.strip().split(' ')
             indexes = [int(ind)-1 for ind in param[1:]]
             trackedParams[param[0]] = indexes
-    return(trackedParams)
+    return trackedParams
 
 
 def initScan(*args, trackedParams=None):
@@ -112,6 +115,7 @@ def initScan(*args, trackedParams=None):
     '''
 
     scanMolecules = []
+    scanFiles = []
 
     if trackedParams != None:
         parameters = parseTrackedParams(trackedParams)
@@ -127,10 +131,10 @@ def initScan(*args, trackedParams=None):
         for step in range(1, scanInfo['nSteps']):
             molecule = mol.initMol(logFile, optStep=step)
             scanMolecules.append(molecule)
+            scanFiles.append(logFile)
 
         # Add parameter as an attribute for each scan molecule
         for scanMol in scanMolecules:
             scanMol.setParameters(parameters)
 
-
-    return(scanMolecules)
+    return scanFiles, scanMolecules
