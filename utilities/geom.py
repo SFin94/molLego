@@ -7,10 +7,10 @@ import sys
 
 def calcParam(paramSet, geometry):
 
-    '''Function which calculates the bond, valence angle or dihedral of the inputted parameters
+    '''Function which calculates the bond, valence angle or dihedral of the inputted parameters - can take multiple parameters
 
     Parameters:
-     paramSet: Nested list of Ints - the sets of parameters to calcualte the geometry for
+     paramSet: Nested list of Ints - the sets of parameters to calculate the geometry for
      geometry: Numpy array (dim: numAtoms, 3) (float) - Results array of x, y, z coordinates for each atom (might work as list)
 
     Returns:
@@ -26,11 +26,11 @@ def calcParam(paramSet, geometry):
     # Check number of indexes specifying each parameter and calcualte corresponding value (bond, angle or dihedral)
     for param in paramSet:
         if len(param) == 2:
-            paramVal.append(atomDist(geometry[param[0]], geometry[param[1]]))
+            paramVal.append(calcDist(geometry[param[0]], geometry[param[1]]))
         elif len(param) == 3:
-            paramVal.append(atomAngle(geometry[param[0]], geometry[param[1]], geometry[param[2]]))
+            paramVal.append(calcAngle(geometry[param[0]], geometry[param[1]], geometry[param[2]]))
         else:
-            paramVal.append(atomDihedral(geometry[param[0]], geometry[param[1]], geometry[param[2]], geometry[param[3]]))
+            paramVal.append(calcDihedral(geometry[param[0]], geometry[param[1]], geometry[param[2]], geometry[param[3]]))
     return(paramVal)
 
 
@@ -38,11 +38,11 @@ def calcDist(atomOne, atomTwo):
 
     ''' Simple function whih calculates the distance between two atoms
         Parameters:
-        atomOne - np array; x, y, z coordinates of atom one
-        atomTwo - np array; x, y, z coordinates of atom two
+         atomOne - np array; x, y, z coordinates of atom one
+         atomTwo - np array; x, y, z coordinates of atom two
 
         Returns:
-        dist - float; distance between the two atoms
+         dist - float; distance between the two atoms
         '''
     # Calculates the bond vector between the two atoms
     bVec = atomOne - atomTwo
@@ -55,12 +55,12 @@ def calcAngle(atomOne, atomTwo, atomThree):
 
     ''' Simple function which calculates the angle between three atoms, middle atom is atomTwo
         Parameters:
-        atomOne - np array; x, y, z coordinates of atom one
-        atomTwo - np array; x, y, z coordinates of atom two
-        atomThree - np array; x, y, z coordinates of atom three
+         atomOne - np array; x, y, z coordinates of atom one
+         atomTwo - np array; x, y, z coordinates of atom two
+         atomThree - np array; x, y, z coordinates of atom three
 
         Returns:
-        angle - float; angle between the two vectors: (atomTwo, atomOne) and (atomTwo, atomThree)
+         angle - float; angle between the two vectors: (atomTwo, atomOne) and (atomTwo, atomThree)
         '''
     # Calculate the two bond vectors
     bOneVec = atomOne - atomTwo
@@ -146,15 +146,15 @@ def geomPullxyz(inputFile):
 
 def geomPushxyz(outputFile, numAtoms, atomIDs, coordinates):
 
-'''Function which outputs the extracted geometry to an .xyz file.
+    '''Function which outputs the extracted geometry to an .xyz file.
 
-    Parameters:
-     outputFile: Str - name of the output xyz file
-'''
+        Parameters:
+         outputFile: Str - name of the output xyz file
+    '''
 
-# Open output file, print header lines then atom indexes and cartesian coordinates to file
-with open(outputFile + '.xyz', 'w+') as output:
-    print(numAtoms, file=output)
-    print('Structure of {}'.format(outputFile.split('.')[0]), file=output)
-    for atomInd, atom in enumerate(atomIDs):
-        print('{0:<4} {1[0]: >10f} {1[1]: >10f} {1[2]: >10f}'.format(atom, coordinates[atomInd]), file=output)
+    # Open output file, print header lines then atom indexes and cartesian coordinates to file
+    with open(outputFile + '.xyz', 'w+') as output:
+        print(numAtoms, file=output)
+        print('Structure of {}'.format(outputFile.split('.')[0]), file=output)
+        for atomInd, atom in enumerate(atomIDs):
+            print('{0:<4} {1[0]: >10f} {1[1]: >10f} {1[2]: >10f}'.format(atom, coordinates[atomInd]), file=output)

@@ -214,7 +214,7 @@ def pullScanInfo(logFile):
 
     # Gets the atom IDs for setting the parameter key
     atomIDs = pullAtomIDs(logFile)
-    print(atomIDs)
+
     # Iterates over the modRedundant inputs, finds the scan parameter and saves the input
     for mR in modRedundant:
         # Identifies number of atom IDs to expect and tests the action input for the scan parameter (assuming only one here, could have more)
@@ -227,7 +227,6 @@ def pullScanInfo(logFile):
                 scanInfo['paramKey'] += (atomIDs[int(atomInd) - 1] + atomInd + '-')
             scanInfo['atomInd'].append(int(mR[numAtoms]) - 1)
             scanInfo['paramKey'] += (atomIDs[int(mR[numAtoms]) - 1] + mR[numAtoms])
-            print(scanInfo)
 
     try:
         return(scanInfo)
