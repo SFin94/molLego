@@ -59,13 +59,6 @@ class MoleculeThermo(Molecule):
         self.eTherm, self.h, self.g, self.s, self.zpe = thermo
 
 
-#class Scan(Molecule):
-#
-#    '''Class that is an object of Molecules - one for each scan step; can either be from scan file or several stand alone files?'''
-#
-#    super().__init__(logFile)
-
-
 def initMol(logFile, type='molecule', optStep=1):
 
     '''Function that initiates a molecule or moleculeThermo object from a gaussian log file assuming that the final geometry is wanted (e.g. from an opt or freq calculation)
