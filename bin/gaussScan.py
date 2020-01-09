@@ -3,6 +3,20 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import molLego as ml
 
+'''
+Script to store results from gaussian relaxed scan log file(s) to a dataframe (csv) and to optionally plot them or to plot results from existing dataframe (csv file).
+
+Uses argparse for CL arguments
+    Usage:"usage: %(prog)s [inputFiles] [args]"
+    
+Where:
+    inputFiles: str - paths to either multiple gaussian log files (same parameter scanned in all of them); OR csv file with previous dataframe in [NB: if csv then scan parameter needs to be specified]
+    args:
+        '-p/--sparam': str - scan parameter (corresponding to header of parameter column in csv file); only needs to be included if input file is csv file
+        '-t/--tparam': str - path to additional file containing other geometric parameters to track
+        's/--save': str - name to save plot with (minus .png extension)
+        '--noplot': bool [deafult:True] - if flag used then stores False and plot will not be plotted (e.g. if only want csv files from original log files)
+'''
 
 if __name__ == '__main__':
 
@@ -22,7 +36,6 @@ if __name__ == '__main__':
 
     # Unpack inputFiles and see if csv or not
     inputFiles = args.inputFiles[:]
-
 
     # Parse in csv file of scan results
     if inputFiles[0].split('.')[-1] == 'csv':
