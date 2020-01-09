@@ -218,15 +218,15 @@ def pullScanInfo(logFile):
     # Iterates over the modRedundant inputs, finds the scan parameter and saves the input
     for mR in modRedundant:
         # Identifies number of atom IDs to expect and tests the action input for the scan parameter (assuming only one here, could have more)
-        numAtoms = types[mR[0]]
-        if mR[numAtoms+1] == 'S':
+        numAtomsParam = types[mR[0]]
+        if mR[numAtomsParam+1] == 'S':
             scanInfo = {'paramKey': '', 'atomInd': [], 'nSteps': int(mR[-2]), 'stepSize': float(mR[-1])}
             # Set paramKey and atom indexes (NB: deduct 1 for python indexing) of scan parameter
-            for atomInd in mR[1:numAtoms]:
+            for atomInd in mR[1:numAtomsParam]:
                 scanInfo['atomInd'].append(int(atomInd) - 1)
                 scanInfo['paramKey'] += (atomIDs[int(atomInd) - 1] + atomInd + '-')
-            scanInfo['atomInd'].append(int(mR[numAtoms]) - 1)
-            scanInfo['paramKey'] += (atomIDs[int(mR[numAtoms]) - 1] + mR[numAtoms])
+            scanInfo['atomInd'].append(int(mR[numAtomsParam]) - 1)
+            scanInfo['paramKey'] += (atomIDs[int(mR[numAtomsParam]) - 1] + mR[numAtomsParam])
 
     try:
         return(scanInfo)
