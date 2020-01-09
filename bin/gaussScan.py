@@ -28,7 +28,7 @@ if __name__ == '__main__':
     if inputFiles[0].split('.')[-1] == 'csv':
         scanResults = pd.read_csv(args.inputFiles[0])
         try:
-            scanParameter = args.scanParam[0]
+            scanParameter = args.scanParam
         except:
             print("No scan parameter given, provide the header for the scan parameter column from csv as: -p [header]")
 
