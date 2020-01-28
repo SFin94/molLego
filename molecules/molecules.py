@@ -18,13 +18,14 @@ class Molecule():
 
     '''
 
-    def __init__(self, logFile, molEnergy, molGeom, atomIDs):
+    def __init__(self, logFile, molEnergy, molGeom, atomIDs, optimised):
 
         self.logFile = logFile
         self.escf = molEnergy
         self.atoms = atomIDs
         self.numAtoms = len(atomIDs)
         self.atomCoords = molGeom
+        self.optimised = optimised
 
     def setParameters(self, parameters):
 
@@ -32,11 +33,6 @@ class Molecule():
         paramKeys = list(parameters.keys())
         paramValues = geom.calcParam(list(parameters.values()), self.atomCoords)
         self.parameters = dict(zip(paramKeys, paramValues))
-
-    def setOptimised(optimised):
-
-        '''Class function to set optimiesd as additional attribute'''
-        self.optimised = optimised
 
 
 class MoleculeThermo(Molecule):
@@ -55,11 +51,18 @@ class MoleculeThermo(Molecule):
 
 
         # Set thermodynamic values (energy, enthalpy, Gibbs free energy, entropy, zpe) for molecule
-        super().__init__(logFile, molEnergy, molGeom, atomIDs)
-        self.eTherm, self.h, self.g, self.s, self.zpe = thermo
+        super().__init__(logFile, molEnergy, molGeom, atomIDs, optimised)
+        self.e, self.h, self.g, self.s, self.zpe = thermo
+
+#
+#    def setReactionCoord(self,):
+#
+#
+#    def setNeighbours(self, neighbourList):
 
 
-def initMol(logFile, type='molecule', optStep=1):
+
+def initMolFromLog(logFile, type='molecule', optStep=1):
 
     '''Function that initiates a molecule or moleculeThermo object from a gaussian log file assuming that the final geometry is wanted (e.g. from an opt or freq calculation)
 
@@ -72,17 +75,50 @@ def initMol(logFile, type='molecule', optStep=1):
     '''
 
     # Parse all properties from gaussian log file - currently don't set optstep or mp2
-    numAtoms = glog.countAtoms(logFile)
     molEnergy = glog.pullEnergy(logFile, optStep)[0]
     molGeom, optimised = glog.pullGeom(logFile, optStep)
+    print(optimised)
     atomIDs = glog.pullAtomIDs(logFile)
 
     # If thermochemistry wanted, parse additional information
     if type != 'molecule':
         thermo = glog.pullThermo(logFile)
+        molecule = MoleculeThermo(logFile, molEnergy, molGeom, atomIDs, optimised, thermo)
+    else:
+        molecule = Molecule(logFile, molEnergy, molGeom, atomIDs, optimised)
+
+    return molecule
+
+
+def initMolFromDF(dfFileEntry, type='molecule', geom=False, optStep=1):
+
+    '''Function that initiates a molecule or moleculeThermo object from a prexisting data file
+    Parameters:
+     datafile: str - name of the gaussian log file
+     type: str - whether a molecule or moleculeThermo object is to be created
+
+    Returns:
+     molecule: :class:object for a molecule
+    '''
+
+    rawDataFrame = pd.read_csv(dfFile)
+    logFile = rawDataFrame['File']
+    molEnergy = rawDataFrame['E SCF (h)']
+
+    # Parse all properties from gaussian log file - currently don't set optstep or mp2
+    if geom == True:
+        molGeom, optimised = glog.pullGeom(logFile, optStep)
+        atomIDs = glog.pullAtomIDs(logFile)
+    else:
+        molGeom = None
+        atomIDs = None
+
+    '''order of thermo'''
+    if type != 'molecule':
+        thermo = rawDataFrame['E'], rawDataFrame['H'], rawDataFrame['G'], rawDataFrame['S'], rawDataFrame['ZPE']
+        print(thermo)
         molecule = MoleculeThermo(logFile, molEnergy, molGeom, atomIDs, thermo)
     else:
         molecule = Molecule(logFile, molEnergy, molGeom, atomIDs)
 
     return molecule
-

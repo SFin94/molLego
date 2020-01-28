@@ -68,7 +68,7 @@ def plotMolsE(moleculeData, energyCol='Relative E', save=None, colour=None, labe
     ax.set_xlabel('Molecule')
 
     if save != None:
-        plt.savefig(save + '.png')
+        plt.savefig(save + '.png', dpi=600)
 
     return fig, ax
 
@@ -120,6 +120,6 @@ def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, co
     ax.legend(handles=[mlin.Line2D([], [], color='#E71E47', label='Unoptimised', marker='o', alpha=0.6, linestyle=' '), mlin.Line2D([], [], color='#0C739C', label='Optimised', marker='o', alpha=0.6, linestyle=' ')], frameon=False, handletextpad=0.1)
 
     if save != None:
-        plt.savefig(save[0] + '.png')
+        plt.savefig(save + '.png', dpi=600)
 
     return fig, ax

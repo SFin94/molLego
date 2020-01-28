@@ -31,7 +31,7 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--sparam", dest="scanParam", type=str)
     parser.add_argument("-t", "--tparam", dest="trackParamFile", type=str, default=None)
     parser.add_argument("--noplot", dest="plot", action='store_false')
-    parser.add_argument("-s", "--save", dest="save")
+    parser.add_argument("-s", "--save", dest="save", type=str, help="Name of file to save plot too (minus .png extension")
     args = parser.parse_args()
 
     # Unpack inputFiles and see if csv or not
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         scanFiles, scanMolecules = ml.initScan(*inputFiles, trackedParams=args.trackParamFile)
         scanInfo = ml.pullScanInfo(inputFiles[0])
         scanParameter = scanInfo['paramKey']
-        scanResults = ml.moleculesToDataFrame(scanFiles, scanMolecules, save='ps'+scanParameter)
+        scanResults = ml.moleculesToDataFrame(scanMolecules, save='ps'+scanParameter)
 
     # Plot results if wanted (sort results by parameter value first)
     if args.plot == True:
