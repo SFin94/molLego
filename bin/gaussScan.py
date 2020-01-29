@@ -29,9 +29,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(usage=usage)
 
     parser.add_argument("inputFiles", nargs='*', type=str, help="The resulting .log files with the scan in")
-    parser.add_argument("-p", "--sparam", dest="scanParam", type=str)
-    parser.add_argument("-t", "--tparam", dest="trackParamFile", type=str, default=None)
-    parser.add_argument("--noplot", dest="plot", action='store_false')
+    parser.add_argument("-p", "--sparam", dest="scanParam", type=str, help="Scan parameter (matches dataframe column header if being parsed from csv)")
+    parser.add_argument("-t", "--tparam", dest="trackParamFile", type=str, default=None, help="Name of text file containing any additional tracked parameter")
+    parser.add_argument("--plot", dest="plot", type=int, default=0, help="The dimensionality of the surface to be plotted, 0: no plot; 1: 1D PE profile; 2: 2D PES")
+    parser.add_argument("--ptwo", dest="scanParamTwo", type=str, default=None, help="Second scan parameter (matches dataframe column header if being parsed from csv) for 2D PES")
     parser.add_argument("-s", "--save", dest="save", type=str, help="Name of file to save plot too (minus .png extension")
     args = parser.parse_args()
 
@@ -54,9 +55,16 @@ if __name__ == '__main__':
         scanResults = ml.moleculesToDataFrame(scanMolecules, save='ps'+scanParameter)
 
     # Plot results if wanted (sort results by parameter value first)
-    if args.plot == True:
+    if args.plot == 1:
         scanResults = scanResults.sort_values(scanParameter)
         fig, ax = ml.plotParamE(scanResults, paramCol=scanParameter, save=args.save, scan=True)
+        plt.show()
+    elif args.plot == 2:
+        try:
+            args.scanParamTwo != None
+        except:
+            print('Second parameter not set for 2D PES')
+        fig, ax = ml.plotPES(scanResults, paramOneCol=scanParameter, paramTwoCol=args.scanParamTwo, save=args.save)
         plt.show()
 
 

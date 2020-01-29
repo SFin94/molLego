@@ -1,6 +1,6 @@
-import numpy as np
 import sys
 import os
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlin
@@ -24,7 +24,7 @@ def plotSetup():
     plt.rcParams['font.sans-serif'] = 'Arial'
 
     # Set figure and plot param(s) vs energy
-    fig, ax = plt.subplots(figsize=(7,6))
+    fig, ax = plt.subplots(figsize=(12,9))
 
     # Remove plot frame lines
     ax.spines["top"].set_visible(False)
@@ -83,8 +83,8 @@ def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, co
      paramCol: str - header for parameter column in dataframe
      energyCol: str - header for relative energy column in dataframe [default: 'Relative E']
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
-     colour: colour (matplotlib) - colour to plot the conformers in [default: None type]. If default then a cubehelix colour is used.
-     scan: bool -
+     colour: colour (matplotlib) - colour to plot the conformers in [default: None type; if default then a cubehelix colour is used].
+     scan: bool - flag of whether a scan is being plotted, if true then links the scatterpoints with a line
 
     Returns:
      fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
@@ -120,3 +120,60 @@ def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, co
         plt.savefig(save + '.png', dpi=600)
 
     return fig, ax
+
+
+def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', save=None, colour=None):
+
+    '''
+    Function which plots a 2D PES for two parameters
+
+     Parameters:
+      moleculeData: pandas DataFrame - Containing conformer names/keys and energies
+      paramOneCol: str - header for first parameter column in dataframe
+      paramTwoCol: str - header for second parameter column in dataframe
+      energyCol: str - header for relative energy column in dataframe [default: 'Relative E']
+      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
+      colour: colour (matplotlib cmap) - colour map to plot the PES [default: None type; if default then a cubehelix colour map is used].
+
+     Returns:
+      fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
+
+     '''
+
+    fig, ax = plotSetup()
+
+    # Filter out any unoptimised points
+    moleculeData = moleculeData[moleculeData.Optimised]
+
+    # Set linearly spaced parameter values and define grid between them
+    paramOneRange = np.linspace(moleculeData[paramOneCol].min(), moleculeData[paramOneCol].max(), 100)
+    paramTwoRange = np.linspace(moleculeData[paramTwoCol].min(), moleculeData[paramTwoCol].max(), 100)
+    paramOneGrid, paramTwoGrid = np.meshgrid(paramOneRange, paramTwoRange)
+
+    # Interpolate the energy data on to the grid points for plotting
+    interpE = griddata((moleculeData[paramOneCol].values, moleculeData[paramTwoCol].values), moleculeData[energyCol], (paramOneGrid, paramTwoGrid), method='cubic')
+
+    # Set cmap if none provided
+    if colour == None:
+        colour = sns.cubehelix_palette(light=1, dark=0, as_cmap=True)
+
+    # Plot filled contour and add colour bar
+    c = ax.contourf(paramOneRange, paramTwoRange, interpE, 20, cmap=colour)
+    fig.subplots_adjust(right=0.8)
+    cb = fig.colorbar(c)
+    cb.set_label('Relative Energy (kJmol$^{-1}$)')
+
+    # Plot scatter points on (all; TS3b_sp; TS3b_gp_guess)
+#    ax.plot(scanResults[paramOne], scanResults[paramTwo], marker='o', alpha=0.4, linestyle=' ', color='#071047')
+#    ax.plot(2.112312163834929, 1.284186052611147, marker='o', alpha=0.7, color='#071047')
+
+    # Set x and y labels
+    ax.set_xlabel(paramOneCol, fontsize=13)
+    ax.set_ylabel(paramTwoCol, fontsize=13)
+
+    if save != None:
+        plt.savefig(save + '.png')
+
+    return fig, ax
+
+
