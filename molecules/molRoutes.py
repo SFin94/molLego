@@ -1,8 +1,8 @@
 import sys
 import numpy as np
 import pandas as pd
-import utilities.analyseGaussLog as glog
-import molecules
+import molLego.utilities.analyseGaussLog as glog
+import molLego.molecules.molecules as molecules
 
 
 '''A module of routines that interface with the Molecule classes'''
@@ -21,39 +21,41 @@ def constructMols(systemFile, type='molecule'):
     Returns:
      molNames: list of str - molecule names/keys for each molecule in file [molKey in system file]
      molFile: list of str - molecules log file for each molecule in file
-     molecules: list of Molecule/MoleculeThermo objects for each molecule in system file
+     mols: list of Molecule/MoleculeThermo objects for each molecule in system file
     '''
+
     # Read in system file
     with open(systemFile) as file:
         input = file.read().splitlines()
 
     # Creates a molecule or thermo object for each of the molecules inputted
-    molecules, molNames, molFile = [], [], []
+    mols, molNames, molFiles = [], [], []
     for line in input:
         if line[0] != '#':
             molNames.append(line.split()[0])
-            molFile.append(line.split()[1])
+            molFiles.append(line.split()[1])
 
             if type == 'reaction':
-                molecule.append(mol.initMol(molFile[-1], line.split()[2:], type='reaction'))
+                mols.append(molecules.initMolFromLog(molFile[-1], line.split()[2:], type='reaction'))
             else:
-                molecules.append(mol.initMol(molFile[-1], type))
+                mols.append(molecules.initMolFromLog(molFile[-1], type))
 
-    return molNames, molFile, molecules
+    return molNames, molFile, mols
 
 
-def moleculesToDataFrame(molecules, molNames=None, save=None):
+def moleculesToDataFrame(mols, molNames=None, save=None):
 
     '''Function which creates a dataframe for all of the molecules and can write to a csv
+
     Parameters:
-     molNames: list - molecule names/keys
-     molFiles: list - corresponding gaussian log files the data originates from
-     molecules: list of MoleculeThermo objects - MoleculeThermo instances for each molecule
-     fileName [optional]: str - name of file to write dataframe to (without csv extension)
+     mols: list of Molecule or MoleculeThermo objects - instances for each molecule
+     molNames [optional, default=None]: list - molecule names/keys
+     save [optional, default=None]: str - name of file to write dataframe to (without csv extension)
     '''
+
     # Create a dataframe of molecule attributes depending on object type (Molecule or MoleculeThermo)
     data = []
-    for ind, mol in enumerate(molecules):
+    for ind, mol in enumerate(mols):
         propDict = {'File': mol.logFile, 'E SCF (h)': mol.escf, 'Optimised': mol.optimised}
 
         if hasattr(mol, 'e'):
@@ -69,7 +71,7 @@ def moleculesToDataFrame(molecules, molNames=None, save=None):
 
     if molNames == None:
         molNames = []
-        [molNames.append(mol.logFile.split('/')[-1][:-4]) for mol in molecules]
+        [molNames.append(mol.logFile.split('/')[-1][:-4]) for mol in mols]
         moleculeData = pd.DataFrame(data)
     moleculeData = pd.DataFrame(data, index=molNames)
 
@@ -118,6 +120,9 @@ def initScan(*args, trackedParams=None):
      args: str - gaussian log files of scan results
      trackedParams: [optional] str - file with tracked parameters in (gaussian indexes)
 
+    Retursn:
+     scanFiles: List of str - scan file names for each molecule object
+     scanMolecules: List of Molecule objects for each step of scan
     '''
 
     scanMolecules = []
@@ -134,7 +139,7 @@ def initScan(*args, trackedParams=None):
         parameters[scanInfo['paramKey']] = scanInfo['atomInd']
         # Test to see if param is the same here - else flag warning
 
-        for step in range(1, scanInfo['nSteps']):
+        for step in range(1, scanInfo['nSteps']+2):
             molecule = molecules.initMolFromLog(logFile, optStep=step)
             scanMolecules.append(molecule)
             scanFiles.append(logFile)

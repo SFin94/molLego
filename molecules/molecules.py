@@ -1,6 +1,6 @@
 import numpy as np
-import utilities.analyseGaussLog as glog
-import utilities.geom as geom
+import molLego.utilities.analyseGaussLog as glog
+import molLego.utilities.geom as geom
 
 '''
 Script containing class definitions for base class Molecule and sub class Thermomolecule
@@ -77,7 +77,6 @@ def initMolFromLog(logFile, type='molecule', optStep=1):
     # Parse all properties from gaussian log file - currently don't set optstep or mp2
     molEnergy = glog.pullEnergy(logFile, optStep)[0]
     molGeom, optimised = glog.pullGeom(logFile, optStep)
-    print(optimised)
     atomIDs = glog.pullAtomIDs(logFile)
 
     # If thermochemistry wanted, parse additional information

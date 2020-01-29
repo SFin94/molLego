@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import molLego as ml
 
+
 '''
 Script to store results from gaussian relaxed scan log file(s) to a dataframe (csv) and to optionally plot them or to plot results from existing dataframe (csv file).
 
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     # Plot results if wanted (sort results by parameter value first)
     if args.plot == True:
         scanResults = scanResults.sort_values(scanParameter)
-        fig, ax = ml.plotParamE(scanResults, paramCol=scanParameter, save=args.save)
+        fig, ax = ml.plotParamE(scanResults, paramCol=scanParameter, save=args.save, scan=True)
         plt.show()
 
 

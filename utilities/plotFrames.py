@@ -73,7 +73,7 @@ def plotMolsE(moleculeData, energyCol='Relative E', save=None, colour=None, labe
     return fig, ax
 
 
-def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, colour=None, scan=False, optimised=None):
+def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, colour=None, scan=False):
 
     '''
     Function which plots molecules/conformers against the relative energy
@@ -93,31 +93,28 @@ def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, co
 
     fig, ax = plotSetup()
 
-    if colour == None:
-        colour = sns.cubehelix_palette(8, start=.5, rot=-.4, dark=0, light=0.5)
-
-    # Change to make - set colour for unoptimised and set optimised as another class feature
-    # Set colour list so that unoptimised points are coloured differently
-    # If optimised/non-optimised information is known then set plot colours to show unopt points
-    if optimised != None:
+    # Set colours for plotting
+    if 'Optimised' in moleculeData.columns.values:
+        if colour == None:
+            colour = [sns.cubehelix_palette(8, start=2.1, dark=0, light=0.5)[5], sns.cubehelix_palette(8, dark=0, light=0.5)[5]]
+            colour = [sns.cubehelix_palette(8)[5], sns.cubehelix_palette(8, rot=-.4)[5]]
         colList = []
-        colours = ['#E71E47', '#0C739C']
-#        colours = ['#E71E47', colour[5]]
-        [colList.append(colours[opt]) for opt in optimised]
+        [colList.append(colour[opt]) for opt in moleculeData['Optimised']]
     else:
-#        colList = [colour[5]]*len(list(moleculeData.index))
-        colList = ['#0C739C']*len(list(moleculeData.index))
+        colList = [colour]*len(list(moleculeData.index))
 
-    # Plot points and connecting lines
-    ax.scatter(moleculeData[paramCol], moleculeData[energyCol], color=colList, marker='o', s=50, alpha=0.6)
-    ax.plot(moleculeData[paramCol], moleculeData[energyCol], marker=None, alpha=0.3, color='#0C739C')
+    # Plot points and connecting lines if scan
+    ax.scatter(moleculeData[paramCol], moleculeData[energyCol], color=colList, marker='o', s=50, alpha=0.8)
+    if scan == True:
+        ax.plot(moleculeData[paramCol], moleculeData[energyCol], marker=None, alpha=0.4, color=colour[1])
 
     # Set x and y labels
     ax.set_xlabel(paramCol, fontsize=13)
     ax.set_ylabel('$\Delta$E (kJmol$^{-1}$)', fontsize=13)
 
     # Set legend to show unopt vs. opt points
-    ax.legend(handles=[mlin.Line2D([], [], color='#E71E47', label='Unoptimised', marker='o', alpha=0.6, linestyle=' '), mlin.Line2D([], [], color='#0C739C', label='Optimised', marker='o', alpha=0.6, linestyle=' ')], frameon=False, handletextpad=0.1)
+    if 'Optimised' in moleculeData.columns.values:
+        ax.legend(handles=[mlin.Line2D([], [], color=colour[0], label='Unoptimised', marker='o', alpha=0.6, linestyle=' '), mlin.Line2D([], [], color=colour[1], label='Optimised', marker='o', alpha=0.6, linestyle=' ')], frameon=False, handletextpad=0.1)
 
     if save != None:
         plt.savefig(save + '.png', dpi=600)
