@@ -20,7 +20,7 @@ def constructMols(systemFile, type='molecule'):
 
     Returns:
      molNames: list of str - molecule names/keys for each molecule in file [molKey in system file]
-     molFile: list of str - molecules log file for each molecule in file
+     molFiles: list of str - molecules log file for each molecule in file
      mols: list of Molecule/MoleculeThermo objects for each molecule in system file
     '''
 
@@ -33,14 +33,15 @@ def constructMols(systemFile, type='molecule'):
     for line in input:
         if line[0] != '#':
             molNames.append(line.split()[0])
-            molFiles.append(line.split()[1])
+            molFiles.append(line.split()[1].split(','))
 
-            if type == 'reaction':
-                mols.append(molecules.initMolFromLog(molFile[-1], line.split()[2:], type='reaction'))
-            else:
-                mols.append(molecules.initMolFromLog(molFile[-1], type))
+            # Create moleucle object for first input file and sum all moleucles togetehr if multiple files
+            mols.append(molecules.initMolFromLog(molFiles[-1][0], type))
+            for mFile in molFiles[-1][1:]:
+                extraMol = molecules.initMolFromLog(mFile, type)
+                mols[-1] = sumMolecules(mols[-1], extraMol)
 
-    return molNames, molFile, mols
+    return molNames, molFiles, mols
 
 
 def moleculesToDataFrame(mols, molNames=None, save=None):
@@ -193,6 +194,8 @@ def sumMolecules(*args):
     # Set sums for quantities and empty lists
     escfSum = 0.0
     atomList, logFiles = [], []
+    optimised = True
+
     if hasattr(args[0], 'e'):
         type = 'thermo'
         eSum, gSum, hSum, sSum, zpeSum = 0.0, 0.0, 0.0, 0.0, 0.0
@@ -206,6 +209,10 @@ def sumMolecules(*args):
         atomList.append(mol.atoms)
         escfSum += mol.escf
 
+        if mol.optimised == False:
+            optimised = False
+            print('Warning, one molecule in complex is not optimised')
+
         if type == 'thermo':
             try:
                 eSum += mol.e
@@ -218,8 +225,115 @@ def sumMolecules(*args):
 
     # Instantiate molecule class with summed values
     if type == 'thermo':
-        newMolecule = molecules.MoleculeThermo(logFiles, escfSum, molGeom=None, atomIDs=atomList, thermo=[eSum, hSum, gSum, sSum, zpeSum])
+        newMolecule = molecules.MoleculeThermo(logFiles, escfSum, molGeom=None, atomIDs=atomList, optimised=optimised, thermo=[eSum, hSum, gSum, sSum, zpeSum])
     else:
-        newMolecule = molecules.Molecule(logFiles, escfSum, molGeom=None, atomIDs=atomList)
+        newMolecule = molecules.Molecule(logFiles, escfSum, molGeom=None, atomIDs=atomList, optimised=optimised)
 
     return newMolecule
+
+
+def initReactionProfile(reacStepNames, reacSteps, paths):
+
+    '''Function that creates a reaction profile object for a reaction path
+
+    Parameters:
+     reacStepNames: list - str identifiers of the unique steps on the reaction profile
+     reacSteps: list - ThermoMolecular objects of the unique steps on the reaction profile
+     paths: list - indexes of the steps making up each reaction path in the profile
+
+    Returns:
+     reactionProfile: list of :class:objects -  List of ReactionPath objects containing the molecules in the path
+    '''
+
+    # Set initial variables
+    reactionProfile = []
+    reactantsNode = paths[0]
+    pathMolecules = [reacSteps[0]]
+    pathNames = [reacStepNames[0]]
+
+    # For each seperate path create a ReactionPath object
+    for pStep in paths[1:]:
+        if pStep == reactantsNode:
+            reactionProfile.append(molecules.ReactionPath(pathMolecules, pathNames))
+            pathMolecules = []
+            pathNames = []
+        pathMolecules.append(reacSteps[pStep])
+        pathNames.append(reacStepNames[pStep])
+    reactionProfile.append(molecules.ReactionPath(pathMolecules, pathNames))
+
+    return reactionProfile
+
+
+def constructReactionPath(systemFile, molNames=None):
+
+    # Read in system file
+    with open(systemFile) as file:
+        input = file.read().splitlines()
+
+    # Parse molNames from system file if not already created
+    if molNames == None:
+        molNames = []
+        for line in input:
+            if line[0] != '#':
+                molNames.append(line.split()[0])
+
+    # Set neighbour list form system file
+    # Might not need branches, numSteps or even stepNeighbours
+    numSteps = len(input)
+    branches = 1
+    stepNeighbours = []
+    for line in input:
+        if line[0] != '#':
+            if len(line.split()) > 2:
+                stepNeighbours.append(line.split()[2].split(','))
+                branches += len(stepNeighbours[-1]) - 1
+            else:
+                stepNeighbours.append([])
+
+    # Set adjacency matrix
+    adjacency = np.zeros((numSteps, numSteps))
+    for node, edgeSet in enumerate(stepNeighbours):
+        for edge in edgeSet:
+            adjacency[node, molNames.index(edge)] = 1
+
+    # Calculate path list from adjacency
+    reactantsNode = np.nonzero(np.sum(adjacency, axis=0) == 0)[0][0]
+    pathList = trackReactionPath(reactantsNode, adjacency)
+
+    return pathList, stepNeighbours
+
+
+def trackReactionPath(currentStep, adjacency, path=[]):
+
+    path = path + [currentStep]
+    if np.count_nonzero(adjacency[currentStep,:]) == 0:
+        return path
+
+    paths = []
+    nextPaths = np.nonzero(adjacency[currentStep,:])[0]
+    for nP in nextPaths:
+        nextStep = trackReactionPath(nP, adjacency, path)
+        for nS in nextStep:
+            paths.append(nS)
+    return paths
+
+
+def reacProfileToDataFrame(reactionProfile, save=None):
+
+    rProfileData = pd.DataFrame()
+
+    # For each reaction path create dataframe then append additional columns
+    for rPathInd, reactionPath in enumerate(reactionProfile):
+        rPathData = moleculesToDataFrame(reactionPath.reacSteps, reactionPath.reacStepNames)
+        rPathData['Reaction coordinate'] = reactionPath.reacCoord
+        rPathData['Reaction path'] = [rPathInd]*len(reactionPath.reacStepNames)
+
+        rProfileData = rProfileData.append(rPathData)
+
+
+    # Writes dataframe to file if filename provided
+    if save != None:
+        rProfileData.to_csv(save + '.csv')
+
+    return rProfileData
+

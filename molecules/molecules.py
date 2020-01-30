@@ -43,23 +43,39 @@ class MoleculeThermo(Molecule):
         eTherm: :class:`float` - thermally corrected total energy of the molecule (kJ/mol)
         h: :class:`float` - thermally corrected total enthalpy of the molecule (kJ/mol)
         g: :class:`float` - thermally corrected total Gibbs free energy of the molecule (kJ/mol)
-        s: :class:`float` - total entropy of the molecule (kJ/mol)
+        s: :class:`numpy.ndarray` - total entropy of the molecule (kJ/mol)
         zpe: :class:`float` - zero-point energy of the molecule (kJ/mol)
     '''
 
-    def __init__(self, logFile, molEnergy, molGeom, atomIDs, thermo):
+    def __init__(self, logFile, molEnergy, molGeom, atomIDs, optimised, thermo):
 
 
         # Set thermodynamic values (energy, enthalpy, Gibbs free energy, entropy, zpe) for molecule
         super().__init__(logFile, molEnergy, molGeom, atomIDs, optimised)
         self.e, self.h, self.g, self.s, self.zpe = thermo
 
-#
-#    def setReactionCoord(self,):
-#
-#
-#    def setNeighbours(self, neighbourList):
 
+class ReactionPath():
+
+    '''Class attributes:
+
+        reacSteps: :class:`ThermoMolecule object` - steps of the reaction profile
+        reacStepNames: :class:`list` - str identifiers for each reaction step in the profile
+        reacCoords: :class:`` - floats between 0 and 1 of the reaction coordinate for each step
+         NB: This can either be calculated assuming equal spacing or passed explicitly
+     '''
+
+    def __init__(self, molecules, stepNames, reacCoord=None):
+
+        self.reacSteps = molecules
+        self.reacStepNames = stepNames
+
+        # Calculate the reaction coordinates for the path (assuming linear if not inputted)
+        if reacCoord == None:
+            self.reacCoord = np.linspace(0, 1, len(stepNames))
+        else:
+            scale = reacCoord[-1] - reacCoord[0]
+            self.reacCoord = (reacCoord - reacCoord[0])/scale
 
 
 def initMolFromLog(logFile, type='molecule', optStep=1):
