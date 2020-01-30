@@ -153,7 +153,7 @@ def initScan(*args, trackedParams=None):
     return scanFiles, scanMolecules
 
 
-def calcRelative(moleculeDataFull, molsToPlot=None, quantities=['E SCF (h)']):
+def calcRelative(moleculeDataFull, molsToPlot=None, quantities=['E SCF (h)'], min=None):
 
     '''Function to process a dataframe of molecules to plot and calculates relative E (kJ/mol) [NB: Commented lines can also calcuate and normalised relative E]
 
@@ -174,7 +174,11 @@ def calcRelative(moleculeDataFull, molsToPlot=None, quantities=['E SCF (h)']):
 
     # Calculate relative and normalised quantities
     for q in quantities:
-        moleculeData['Relative '+q] = moleculeData[q] - moleculeData[q].min()
+        if min != None:
+            zero = moleculeData[q][min]
+        else:
+            zero = moleculeData[q].min()
+        moleculeData['Relative '+q] = moleculeData[q] - zero
 
     return moleculeData
 
