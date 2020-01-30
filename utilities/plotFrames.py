@@ -177,3 +177,52 @@ def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', 
     return fig, ax
 
 
+def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colour=None):
+
+    '''Function which plots a reaction profile
+
+    Parameters:
+     reactionData: pandas DataFrame
+     energyCol: str - header for relative energy column in dataframe [default: 'Relative E']
+     save: str - name of image to save plot too (minus .png extension) [deafult: None type]
+     colour: colour (matplotlib cmap) - colour map to plot the PES [default: None type; if default then a cubehelix colour map is used].
+
+    Returns:
+     fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
+
+    '''
+
+    # Will have  a number of reaction pathways to plot
+
+    fig, ax = plotSetup()
+    paths = list(reactionData['Reaction path'].unique())
+
+    # Number of paths will be number of colours
+#    colours = sns.cubehelix_palette(len(paths))
+    colours = sns.color_palette("cubehelix", len(paths))
+    print(colours)
+    colList = []
+    for rStep in reactionData['Reaction path']:
+        colList.append(colours[paths.index(rStep)])
+
+#    ax.scatter(moleculeData[paramCol], moleculeData[energyCol], color=colList, marker='o', s=50, alpha=0.8)
+#    ax.scatter(reactionData['Reaction coordinate'], reactionData[quantityCol], color=colList, marker='_', s=3000, lw=5)
+    for pInd, path in enumerate(paths):
+        print(pInd)
+        reacPathData = reactionData.loc[reactionData['Reaction path'] == path]
+        ax.scatter(reacPathData['Reaction coordinate'], reacPathData[quantityCol], color=colours[pInd], marker='_', s=3000, lw=5)
+        ax.plot(reacPathData['Reaction coordinate'], reacPathData[quantityCol], color=colours[pInd], marker=None, linestyle='--')
+
+
+# Or seperate in to pathway and then can draw connections
+
+    # Set x and y labels
+    ax.set_xlabel('R$_{x}$', fontsize=13)
+    ax.set_ylabel('$\Delta$G (kJmol$^{-1}$)', fontsize=13)
+
+    if save != None:
+        plt.savefig(save + '.png')
+
+    return fig, ax
+
+

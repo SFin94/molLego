@@ -4,21 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import molLego as ml
 
-# Code that will have a molecule as each step in a reaction profile
-# Will need the additional attributes of neighbours and reaction coordinate
-
-# System file parser
-# Now has added lines of:
-# molKey molFile directedEdges
-# Where directed edges are the forward connections [csv format]
-# Need a product or reactant key/flag?
-
-# Want a molFromDF
-
-# Rectants and products - would have to be added
 
 if __name__ == '__main__':
-
 
     '''Parse in the input log files of the scan calculations and any additional input file containing
         tracked parameters.
@@ -33,11 +20,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Unpack inputFiles and see if csv or not
-    inputFile = args.inputFiles[:]
+    inputFile = args.inputFiles
 
     # Parse in csv file of scan results
     if inputFile.split('.')[-1] == 'csv':
-        reactionProfile = pd.read_csv(args.inputFiles[0])
+        reactionProfileData = pd.read_csv(inputFile)
 
     else:
 
@@ -53,12 +40,11 @@ if __name__ == '__main__':
         # Then want to plot the profile
         reactionProfile = ml.initReactionProfile(reacStepNames, reacSteps, paths)
 
-        for rP in reactionProfile:
-            for reacStep in rP.reacSteps:
-                print(reacStep.g)
-
         # Create reaction profile data frame
-        reactionProfileData = ml.reacProfileToDataFrame(reactionProfile)
+        reactionProfileData = ml.reacProfileToDataFrame(reactionProfile, save='reactionProfile')
+
+    fig, ax = ml.plotReactionProfile(reactionProfileData)
+    plt.show()
 
 
 
