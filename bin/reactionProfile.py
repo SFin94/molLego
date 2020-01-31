@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     # Parse in csv file of scan results
     if inputFile.split('.')[-1] == 'csv':
-        reactionProfileData = pd.read_csv(inputFile)
+        reactionProfileData = pd.read_csv(inputFile, index_col=0)
 
     else:
 
@@ -45,7 +45,5 @@ if __name__ == '__main__':
 
     fig, ax = ml.plotReactionProfile(reactionProfileData)
     plt.show()
-
-
 
 
