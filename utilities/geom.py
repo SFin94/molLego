@@ -30,7 +30,7 @@ def calcParam(paramSet, geometry):
         elif len(param) == 3:
             paramVal.append(calcAngle(geometry[param[0]], geometry[param[1]], geometry[param[2]]))
         else:
-            paramVal.append(calcDihedral(geometry[param[0]], geometry[param[1]], geometry[param[2]], geometry[param[3]]))
+            paramVal.append(calcDihed(geometry[param[0]], geometry[param[1]], geometry[param[2]], geometry[param[3]]))
     return(paramVal)
 
 
