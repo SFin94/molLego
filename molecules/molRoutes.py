@@ -69,7 +69,6 @@ def moleculesToDataFrame(mols, molNames=None, save=None):
 
         if hasattr(mol, 'parameters'):
             propDict.update(mol.parameters)
-
     if molNames == None:
         molNames = []
         [molNames.append(mol.logFile.split('/')[-1][:-4]) for mol in mols]
@@ -251,19 +250,21 @@ def initReactionProfile(reacStepNames, reacSteps, paths):
 
     # Set initial variables
     reactionProfile = []
-    reactantsNode = paths[0]
-    pathMolecules = [reacSteps[0]]
-    pathNames = [reacStepNames[0]]
 
-    # For each seperate path create a ReactionPath object
-    for pStep in paths[1:]:
-        if pStep == reactantsNode:
-            reactionProfile.append(molecules.ReactionPath(pathMolecules, pathNames))
-            pathMolecules = []
-            pathNames = []
-        pathMolecules.append(reacSteps[pStep])
-        pathNames.append(reacStepNames[pStep])
-    reactionProfile.append(molecules.ReactionPath(pathMolecules, pathNames))
+    for reactionPath in paths:
+        reactantsNode = reactionPath[0]
+        pathMolecules = [reacSteps[reactantsNode]]
+        pathNames = [reacStepNames[reactantsNode]]
+
+        # For each seperate path create a ReactionPath object
+        for pathStep in reactionPath[1:]:
+            if pathStep == reactantsNode:
+                reactionProfile.append(molecules.ReactionPath(pathMolecules, pathNames))
+                pathMolecules = []
+                pathNames = []
+            pathMolecules.append(reacSteps[pathStep])
+            pathNames.append(reacStepNames[pathStep])
+        reactionProfile.append(molecules.ReactionPath(pathMolecules, pathNames))
 
     return reactionProfile
 
@@ -301,8 +302,10 @@ def constructReactionPath(systemFile, molNames=None):
             adjacency[node, molNames.index(edge)] = 1
 
     # Calculate path list from adjacency
-    reactantsNode = np.nonzero(np.sum(adjacency, axis=0) == 0)[0][0]
-    pathList = trackReactionPath(reactantsNode, adjacency)
+    pathList = []
+    reactantNodes = np.nonzero(np.sum(adjacency, axis=0) == 0)[0]
+    for rNode in reactantNodes:
+        pathList.append(trackReactionPath(rNode, adjacency))
 
     return pathList, stepNeighbours
 

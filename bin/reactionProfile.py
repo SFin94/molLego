@@ -7,8 +7,13 @@ import molLego as ml
 
 if __name__ == '__main__':
 
-    '''Parse in the input log files of the scan calculations and any additional input file containing
-        tracked parameters.
+    '''Script that automatically plots an existing csv file containing reaction paths or processes a reaction from the raw log files in a system .conf file and plots the reaction profile.
+
+        The input file can be ana existing .csv or a .conf file.
+
+        The .conf file should be formatted as:
+            molKey molFile nextReactionStep
+
     '''
 
     usage = "usage: %(prog)s [inputFile(s)] [args]"
@@ -16,7 +21,8 @@ if __name__ == '__main__':
 
     # Currently one input file only
     parser.add_argument("inputFiles", type=str, help="The resulting .log files with the scan in")
-    parser.add_argument("-s", "--save", dest="save", type=str, help="Name of file to save plot too (minus .png extension")
+    parser.add_argument("-s", "--save", dest="save", type=str, help="Name of file to save plot too (minus .png extension)")
+    parser.add_argument("-t", "--tparams", dest="trackParamFile", type=str, default=None, help="Name of text file containing any additional tracked parameter")
     args = parser.parse_args()
 
     # Unpack inputFiles and see if csv or not
@@ -30,13 +36,18 @@ if __name__ == '__main__':
 
         # Reads in reaction conf file and creates a molecule object for each reaction step
         reacStepNames, reacStepFiles, reacSteps = ml.constructMols(inputFile, type='thermal')
+        if args.trackParamFile != None:
+            parameters = ml.parseTrackedParams(args.trackParamFile)
+            for rStep in reacSteps:
+                if rStep.atomCoords is not None:
+                    rStep.setParameters(parameters)
 
         # Creates dataframe of all reaction steps (global relatives and no repeats)
         reactionStepsData = ml.moleculesToDataFrame(reacSteps, molNames=reacStepNames, save='reactionSteps')
 
         # Calculate connectivities - could be done in class?
         paths, neighbourList = ml.constructReactionPath(inputFile, reacStepNames)
-
+        print(paths)
         # Then want to plot the profile
         reactionProfile = ml.initReactionProfile(reacStepNames, reacSteps, paths)
 
