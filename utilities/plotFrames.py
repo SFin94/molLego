@@ -11,13 +11,17 @@ import seaborn as sns
 
 '''Script with some general plotting functions'''
 
-def plotSetup():
+def plotSetup(figsizeX=12,figsizeY=10):
 
     '''
     Function that sets some general settings for all plots
 
+    Parameters:
+     figsizeX: int - x dimesion of plot [default: 12]
+     figsizeY: int - y dimenaion of plot [default: 10]
+
     Returns:
-     fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
+     fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
     '''
 
     # Set font parameters and colours
@@ -25,7 +29,7 @@ def plotSetup():
     plt.rcParams['font.sans-serif'] = 'Arial'
 
     # Set figure and plot param(s) vs energy
-    fig, ax = plt.subplots(figsize=(12,9))
+    fig, ax = plt.subplots(figsize=(figsizeX,figsizeY))
 
     # Remove plot frame lines
     ax.spines["top"].set_visible(False)
@@ -48,7 +52,7 @@ def plotMolsE(moleculeData, energyCol='Relative E', save=None, colour=None, labe
      colour: colour (matplotlib) - colour to plot the conformers in [default: None type]. If default then a cubehelix colour is used.
 
     Returns:
-     fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
+     fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
 
     '''
 
@@ -202,30 +206,31 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
 
     # Set colours is not provided - the number of paths will be number of colours
 #    colours = sns.cubehelix_palette(len(paths))
-    colours = sns.color_palette("cubehelix", len(paths))
-    colList = []
-    for rStep in reactionData['Reaction path']:
-        colList.append(colours[paths.index(rStep)])
+    if colour == None:
+        colPallete = sns.color_palette("cubehelix", len(paths))
+        colour = []
+        for rStep in reactionData['Reaction path']:
+            colour.append(colours[paths.index(rStep)])
 
     # Plot the lines and points for the profile (lineBuffer and stepWidth can be altered to fit the profile)
-#    ax.scatter(reactionData['Reaction coordinate'], reactionData[quantityCol], color=colList, marker='_', s=3000, lw=5)
+#    ax.scatter(reactionData['Reaction coordinate'], reactionData[quantityCol], color=colours, marker='_', s=3000, lw=5)
     for pInd, path in enumerate(paths):
         reacPathData = reactionData.loc[reactionData['Reaction path'] == path]
-        ax.scatter(reacPathData['Reaction coordinate'], reacPathData[quantityCol], color=colours[pInd], marker='_', s=stepWidth, lw=5)
+        ax.scatter(reacPathData['Reaction coordinate'], reacPathData[quantityCol], color=colour[pInd], marker='_', s=stepWidth, lw=5)
         for rStepInd in range(1, len(reacPathData)):
-            ax.plot([reacPathData['Reaction coordinate'].iloc[rStepInd-1]+lineBuffer, reacPathData['Reaction coordinate'].iloc[rStepInd]-lineBuffer], [reacPathData[quantityCol].iloc[rStepInd-1], reacPathData[quantityCol].iloc[rStepInd]],  color=colours[pInd], linestyle='--')
+            ax.plot([reacPathData['Reaction coordinate'].iloc[rStepInd-1]+lineBuffer, reacPathData['Reaction coordinate'].iloc[rStepInd]-lineBuffer], [reacPathData[quantityCol].iloc[rStepInd-1], reacPathData[quantityCol].iloc[rStepInd]],  color=colour[pInd], linestyle='--')
 
             # Plot labels with dataframe index and energy label unless False, plot reactants at the end
             # Commented lines are for two level labels
             if label == True:
                 stepLabel = reacPathData.index.values[rStepInd] + ' (' + str(int(reacPathData[quantityCol].iloc[rStepInd])) + ')'
-                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-labelBuffer, reacPathData[quantityCol].iloc[rStepInd]+3, stepLabel, color=colours[pInd], fontsize=10)
+                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-labelBuffer, reacPathData[quantityCol].iloc[rStepInd]+3, stepLabel, color=colour[pInd], fontsize=10)
 
 #                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-0.02, reacPathData[quantityCol].iloc[rStepInd]+10, reacPathData.index.values[rStepInd], color=colours[pInd], weight='bold')
 #                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-0.01, reacPathData[quantityCol].iloc[rStepInd]+3, '(' + str(int(reacPathData[quantityCol].iloc[rStepInd])) + ')', color=colours[pInd], fontsize=10)
         if label == True:
             reactantLabel = reacPathData.index.values[0] + ' (' + str(int(reacPathData[quantityCol].iloc[0])) + ')'
-            ax.text(reacPathData['Reaction coordinate'].iloc[0]-labelBuffer, reacPathData[quantityCol].iloc[0]+3, reactantLabel, color=colours[pInd], fontsize=10)
+            ax.text(reacPathData['Reaction coordinate'].iloc[0]-labelBuffer, reacPathData[quantityCol].iloc[0]+3, reactantLabel, color=colour[pInd], fontsize=10)
 
 #            ax.text(0, reacPathData[quantityCol].iloc[0]+10, reacPathData.index.values[rStepInd], color=colours[pInd], weight='bold')
 #            ax.text(0, reacPathData[quantityCol].iloc[0]+3, '(' + str(int(reacPathData[quantityCol].iloc[0])) + ')', color=colours[pInd], fontsize=10)
@@ -233,6 +238,7 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
     # Set x and y labels
     ax.set_xlabel('R$_{x}$', fontsize=13)
     ax.set_ylabel('$\Delta$G (kJmol$^{-1}$)', fontsize=13)
+    ax.set_xticks([])
 
     if save != None:
         plt.savefig(save + '.png')
