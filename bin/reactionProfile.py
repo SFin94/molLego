@@ -20,9 +20,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(usage=usage)
 
     # Currently one input file only
-    parser.add_argument("inputFiles", type=str, help="The resulting .log files with the scan in")
-    parser.add_argument("-s", "--save", dest="save", type=str, help="Name of file to save plot too (minus .png extension)")
+    parser.add_argument("inputFiles", type=str, help="The .conf file with the reaction system and log files in or a .csv file of reaction data")
+    parser.add_argument("-s", "--save", dest="save", type=str, default='', help="Name of csv file and plot to save, appended to _rSteps.csv, _rProfile.csv and _rPrfofile.png")
     parser.add_argument("-t", "--tparams", dest="trackParamFile", type=str, default=None, help="Name of text file containing any additional tracked parameter")
+    parser.add_argument("-c", "--colour", dest="plotColour", nargs='*', default=None, help="List of colour RGB codes (starting with '#' for plotting the reaction profile in")
+    parser.add_argument("-z", "--zero", "--min", dest="min", type=str, default=None, help="The reaction point (identifier in csv file) for the reaction steps to be calculated relative to")
     args = parser.parse_args()
 
     # Unpack inputFiles and see if csv or not
@@ -43,18 +45,18 @@ if __name__ == '__main__':
                     rStep.setParameters(parameters)
 
         # Creates dataframe of all reaction steps (global relatives and no repeats)
-        reactionStepsData = ml.moleculesToDataFrame(reacSteps, molNames=reacStepNames, save='reactionSteps')
+        reactionStepsData = ml.moleculesToDataFrame(reacSteps, molNames=reacStepNames, save=args.save + '_rSteps')
 
         # Calculate connectivities - could be done in class?
         paths, neighbourList = ml.constructReactionPath(inputFile, reacStepNames)
-        print(paths)
+
         # Then want to plot the profile
         reactionProfile = ml.initReactionProfile(reacStepNames, reacSteps, paths)
 
         # Create reaction profile data frame
-        reactionProfileData = ml.reacProfileToDataFrame(reactionProfile, save='reactionProfile')
+        reactionProfileData = ml.reacProfileToDataFrame(reactionProfile, save=args.save + '_rProfile', min=args.min)
 
-    fig, ax = ml.plotReactionProfile(reactionProfileData)
+    fig, ax = ml.plotReactionProfile(reactionProfileData, save=args.save, colour=args.plotColour)
     plt.show()
 
 

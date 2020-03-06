@@ -29,9 +29,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(usage=usage)
 
     parser.add_argument("inputFiles", nargs='*', type=str, help="The resulting .log files with the scan in")
-    parser.add_argument("-p", "--sparam", dest="scanParam", type=str, help="Scan parameter (matches dataframe column header if being parsed from csv)")
+    parser.add_argument("-p", "--pone", "--sparam", dest="scanParam", type=str, help="Scan parameter (matches dataframe column header if being parsed from csv)")
     parser.add_argument("-t", "--tparam", dest="trackParamFile", type=str, default=None, help="Name of text file containing any additional tracked parameter")
-    parser.add_argument("--plot", dest="plot", type=int, default=0, help="The dimensionality of the surface to be plotted, 0: no plot; 1: 1D PE profile; 2: 2D PES")
+    parser.add_argument("--plot", dest="plot", type=int, default=1, help="The dimensionality of the surface to be plotted, 0: no plot; 1: 1D PE profile; 2: 2D PES")
     parser.add_argument("--ptwo", dest="scanParamTwo", type=str, default=None, help="Second scan parameter (matches dataframe column header if being parsed from csv) for 2D PES")
     parser.add_argument("-s", "--save", dest="save", type=str, help="Name of file to save plot too (minus .png extension")
     args = parser.parse_args()

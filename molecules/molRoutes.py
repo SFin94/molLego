@@ -44,7 +44,7 @@ def constructMols(systemFile, type='molecule'):
     return molNames, molFiles, mols
 
 
-def moleculesToDataFrame(mols, molNames=None, save=None):
+def moleculesToDataFrame(mols, molNames=None, save=None, min=None):
 
     '''Function which creates a dataframe for all of the molecules and can write to a csv
 
@@ -76,7 +76,7 @@ def moleculesToDataFrame(mols, molNames=None, save=None):
     moleculeData = pd.DataFrame(data, index=molNames)
 
     # Calculate the relative thermodynamic quantities
-    moleculeData = calcRelative(moleculeData, quantities=quantity)
+    moleculeData = calcRelative(moleculeData, quantities=quantity, min=min)
 
     # Writes dataframe to file if filename provided
     if save != None:
@@ -325,13 +325,13 @@ def trackReactionPath(currentStep, adjacency, path=[]):
     return paths
 
 
-def reacProfileToDataFrame(reactionProfile, save=None):
+def reacProfileToDataFrame(reactionProfile, save=None, min=None):
 
     rProfileData = pd.DataFrame()
 
     # For each reaction path create dataframe then append additional columns
     for rPathInd, reactionPath in enumerate(reactionProfile):
-        rPathData = moleculesToDataFrame(reactionPath.reacSteps, reactionPath.reacStepNames)
+        rPathData = moleculesToDataFrame(reactionPath.reacSteps, reactionPath.reacStepNames, min=min)
         rPathData['Reaction coordinate'] = reactionPath.reacCoord
         rPathData['Reaction path'] = [rPathInd]*len(reactionPath.reacStepNames)
 

@@ -36,6 +36,7 @@ def plotSetup(figsizeX=12,figsizeY=10):
     ax.spines["bottom"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
+    ax.tick_params(labelsize=14)
 
     return fig, ax
 
@@ -109,17 +110,17 @@ def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, co
         colList = [colour]*len(list(moleculeData.index))
 
     # Plot points and connecting lines if scan
-    ax.scatter(moleculeData[paramCol], moleculeData[energyCol], color=colList, marker='o', s=50, alpha=0.8)
+    ax.scatter(moleculeData[paramCol], moleculeData[energyCol], color=colList, marker='o', s=70, alpha=0.8)
     if scan == True:
         ax.plot(moleculeData[paramCol], moleculeData[energyCol], marker=None, alpha=0.4, color=colour[1])
 
     # Set x and y labels
-    ax.set_xlabel(paramCol, fontsize=13)
-    ax.set_ylabel('$\Delta$E (kJmol$^{-1}$)', fontsize=13)
+    ax.set_xlabel(paramCol, fontsize=14)
+    ax.set_ylabel('$\Delta$E (kJmol$^{-1}$)', fontsize=14)
 
     # Set legend to show unopt vs. opt points
     if 'Optimised' in moleculeData.columns.values:
-        ax.legend(handles=[mlin.Line2D([], [], color=colour[0], label='Unoptimised', marker='o', alpha=0.6, linestyle=' '), mlin.Line2D([], [], color=colour[1], label='Optimised', marker='o', alpha=0.6, linestyle=' ')], frameon=False, handletextpad=0.1)
+        ax.legend(handles=[mlin.Line2D([], [], color=colour[0], label='Unoptimised', marker='o', alpha=0.6, linestyle=' '), mlin.Line2D([], [], color=colour[1], label='Optimised', marker='o', alpha=0.6, linestyle=' ')], frameon=False, handletextpad=0.1, fontsize=14)
 
     if save != None:
         plt.savefig(save + '.png', dpi=600)
@@ -156,7 +157,7 @@ def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', 
     paramOneGrid, paramTwoGrid = np.meshgrid(paramOneRange, paramTwoRange)
 
     # Interpolate the energy data on to the grid points for plotting
-    interpE = griddata((moleculeData[paramOneCol].values, moleculeData[paramTwoCol].values), moleculeData[energyCol], (paramOneGrid, paramTwoGrid), method='cubic')
+    interpE = griddata((moleculeData[paramOneCol].values, moleculeData[paramTwoCol].values), moleculeData[energyCol], (paramOneGrid, paramTwoGrid))
 
     # Set cmap if none provided
     if colour == None:
@@ -204,13 +205,13 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
     paths = list(reactionData['Reaction path'].unique())
     labelBuffer = lineBuffer - 0.01
 
-    # Set colours is not provided - the number of paths will be number of colours
+    # Set colours if not provided - the number of paths will be number of colours
 #    colours = sns.cubehelix_palette(len(paths))
     if colour == None:
         colPallete = sns.color_palette("cubehelix", len(paths))
         colour = []
-        for rStep in reactionData['Reaction path']:
-            colour.append(colours[paths.index(rStep)])
+        for pInd in range(len(paths)):
+            colour.append(colPallete[paths.index(pInd)])
 
     # Plot the lines and points for the profile (lineBuffer and stepWidth can be altered to fit the profile)
 #    ax.scatter(reactionData['Reaction coordinate'], reactionData[quantityCol], color=colours, marker='_', s=3000, lw=5)
@@ -224,13 +225,13 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
             # Commented lines are for two level labels
             if label == True:
                 stepLabel = reacPathData.index.values[rStepInd] + ' (' + str(int(reacPathData[quantityCol].iloc[rStepInd])) + ')'
-                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-labelBuffer, reacPathData[quantityCol].iloc[rStepInd]+3, stepLabel, color=colour[pInd], fontsize=10)
+                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-labelBuffer, reacPathData[quantityCol].iloc[rStepInd]+2, stepLabel, color=colour[pInd], fontsize=11)
 
 #                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-0.02, reacPathData[quantityCol].iloc[rStepInd]+10, reacPathData.index.values[rStepInd], color=colours[pInd], weight='bold')
 #                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-0.01, reacPathData[quantityCol].iloc[rStepInd]+3, '(' + str(int(reacPathData[quantityCol].iloc[rStepInd])) + ')', color=colours[pInd], fontsize=10)
         if label == True:
             reactantLabel = reacPathData.index.values[0] + ' (' + str(int(reacPathData[quantityCol].iloc[0])) + ')'
-            ax.text(reacPathData['Reaction coordinate'].iloc[0]-labelBuffer, reacPathData[quantityCol].iloc[0]+3, reactantLabel, color=colour[pInd], fontsize=10)
+            ax.text(reacPathData['Reaction coordinate'].iloc[0]-labelBuffer, reacPathData[quantityCol].iloc[0]+2, reactantLabel, color=colour[pInd], fontsize=11)
 
 #            ax.text(0, reacPathData[quantityCol].iloc[0]+10, reacPathData.index.values[rStepInd], color=colours[pInd], weight='bold')
 #            ax.text(0, reacPathData[quantityCol].iloc[0]+3, '(' + str(int(reacPathData[quantityCol].iloc[0])) + ')', color=colours[pInd], fontsize=10)

@@ -18,8 +18,9 @@ def countAtoms(logFile):
         for el in input:
             if 'NAtoms' in el:
                 numAtoms = int(el.split()[1])
+                break
 
-    return(numAtoms)
+    return numAtoms
 
 
 def pullGeom(logFile, optStep=1):

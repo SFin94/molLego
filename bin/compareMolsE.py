@@ -34,20 +34,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Open system file, create molecule objects and dataframe or parse existing data frame
-    if sys.argv[1].split('.')[1] == 'conf':
+    if args.inputFiles.split('.')[1] == 'conf':
         molkeys, molfiles, molecules = ml.constructMols(sys.argv[1], type='thermal')
 
         # Optional - add in tracked geometric parameters if provided
         if args.trackParamFile != None:
-            parameters = parseTrackedParams(args.trackParamFile)
+            parameters = ml.parseTrackedParams(args.trackParamFile)
             for mol in molecules:
-                ml.setParameters(parameters)
+                mol.setParameters(parameters)
 
         csvFile = sys.argv[1].split('.')[0]
-        molData = ml.moleculesToDataFrame(molfiles, molecules, molNames=molkeys, save=args.save)
+        molData = ml.moleculesToDataFrame(molecules, molNames=molkeys, save=args.save)
 
     # If input is csv then process into dataframe
-    elif sys.argv[1].split('.')[1] == 'csv':
+    elif args.inputFiles.split('.')[1] == 'csv':
         molData = pd.read_csv(sys.argv[1], index_col=0)
 
     # Process data to calculate relative values and plot conformers vs. energy (raw SCF energy if no thermal quantities available)
