@@ -37,7 +37,7 @@ if __name__ == '__main__':
     else:
 
         # Reads in reaction conf file and creates a molecule object for each reaction step
-        reacStepNames, reacStepFiles, reacSteps = ml.constructMols(inputFile, type='thermal')
+        reacStepNames, reacSteps = ml.constructMols(inputFile, type='thermal')
         if args.trackParamFile != None:
             parameters = ml.parseTrackedParams(args.trackParamFile)
             for rStep in reacSteps:
