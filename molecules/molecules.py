@@ -27,10 +27,16 @@ class Molecule():
         self.atomCoords = molGeom
         self.optimised = optimised
 
-    def setParameters(self, parameters):
+    def setParameters(self, parameters, gaussIndex=False):
 
         '''Class function to set dict of parameters as additional attribute'''
         paramKeys = list(parameters.keys())
+
+        # If gaussian indexes then transform to python index
+        if gaussIndex == True:
+            for param in paramKeys:
+                parameters[param] = [pVal -1 for pVal in parameters[param]]
+
         paramValues = geom.calcParam(list(parameters.values()), self.atomCoords)
         self.parameters = dict(zip(paramKeys, paramValues))
 
@@ -91,12 +97,17 @@ def initMolFromLog(logFile, type='molecule', optStep=1):
     '''
 
     # Parse all properties from gaussian log file - currently don't set optstep or mp2
-    molEnergy = glog.pullEnergy(logFile, optStep)[0]
-    molGeom, optimised = glog.pullGeom(logFile, optStep)
+    if type.lower() == 'spe':
+        molEnergy = glog.pullEnergy(logFile, optStep, SPE=True)[0]
+        molGeom, optimised = glog.pullGeom(logFile, optStep, SPE=True)
+    else:
+        molEnergy = glog.pullEnergy(logFile, optStep)[0]
+        molGeom, optimised = glog.pullGeom(logFile, optStep)
     atomIDs = glog.pullAtomIDs(logFile)
 
     # If thermochemistry wanted, parse additional information
-    if type != 'molecule':
+    print(type.lower()[:4])
+    if type.lower()[:5] == 'therm':
         thermo = glog.pullThermo(logFile)
         molecule = MoleculeThermo(logFile, molEnergy, molGeom, atomIDs, optimised, thermo)
     else:

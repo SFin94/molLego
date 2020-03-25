@@ -23,13 +23,14 @@ def countAtoms(logFile):
     return numAtoms
 
 
-def pullGeom(logFile, optStep=1):
+def pullGeom(logFile, optStep=1, SPE=False):
 
     '''Function that pulls the geometry from a gaussian log file
 
         Parameters:
          logFile: str - name of the input log file
          optStep: int - the target geometry to pull; useful in scans when specific step needed or when taking a geometry from earlier in an optimisation trajectory. Default = 1 (final geometry for Opt/Freq calcualions
+         SPE: bool - flag for if SPE calcuation or rigid scan and no opt information in log
 
         Returns:
          atomCoords: ndarray (dim: numAtoms, 3; float) - Results array of x, y, z coordinates for each atom in the molecule
@@ -54,6 +55,9 @@ def pullGeom(logFile, optStep=1):
                     el = input.__next__()
                     for jind in range(3):
                         atomCoords[atom, jind] = float(el.split()[jind+3])
+                # If single point calculation then cancel on target standard orientation
+                if SPE == True:
+                    optCount += 1
 
             # Increments optCount if 'Optimized' met, breaks loop if target opt step is reached
             if 'Optimized Parameters' in el:
@@ -63,12 +67,12 @@ def pullGeom(logFile, optStep=1):
                 else:
                     optimised = True
             if (optCount == optStep):
-                break
+                return atomCoords, optimised
 
     return atomCoords, optimised
 
 
-def pullEnergy(logFile, optStep=1, mp2=False,):
+def pullEnergy(logFile, optStep=1, mp2=False, SPE=False):
 
     '''Function that pulls the energy from a gaussian log file
 
@@ -103,8 +107,15 @@ def pullEnergy(logFile, optStep=1, mp2=False,):
                     optimised = False
                 else:
                     optimised = True
-            if (optCount == optStep):
-                break
+                if (optCount == optStep):
+                    return eSCF, optimised
+
+            # If single point calculation then cancel on target standard orientation (follows SCF output)
+            if 'Standard orientation' in el:
+                if SPE == True:
+                    optCount += 1
+                    if (optCount == optStep+1):
+                        return eSCF, optimised
 
     return eSCF, optimised
 
@@ -230,9 +241,89 @@ def pullScanInfo(logFile):
             scanInfo['paramKey'] += (atomIDs[int(mR[numAtomsParam]) - 1] + mR[numAtomsParam])
 
     try:
-        return(scanInfo)
+        return scanInfo
     except NameError:
         print('No scan parameter located')
         raise
 
+
+def pullRigidScanInfo(logFile):
+
+    '''Function that pulls the variables and energy for each step in a gaussian rigid scan log file
+
+        Parameters:
+         logFile: str - name of the input log file
+
+        Returns:
+         eSCF: float - SCF Done energy in a.u.
+         optimsied: bool - flags whether the structure is optimised or not
+    '''
+
+    # Initialise variables
+    scanVars = [] # Make a list of dict with entries to match the details (name, starting value, steps, step size')
+    scanPoints = 1
+    initialzMat = []
+    scanVariables = []
+
+    # Parse log file for variables
+    with open(logFile, 'r') as input:
+        for el in input:
+
+            # Pulls initial z matrix
+            if 'Charge' in el:
+                el = input.__next__()
+                while 'Variables:' not in el:
+                    initialzMat.append(el.strip())
+                    el = input.__next__()
+
+            # Set dicts of scan variables
+            if 'Variables:' in el:
+                el = input.__next__()
+                while el.strip() != '':
+                    varInput = el.split()
+                    scanVariables.append(varInput[0])
+                    currentScanVar = {'Name': varInput[0], 'Initial value': float(varInput[1][:-4]), 'Steps': int(varInput[2]), 'Step size' : float(varInput[3])}
+                    scanVars.append(currentScanVar)
+                    scanPoints *= (currentScanVar['Steps'] + 1)
+                    el = input.__next__()
+                break
+
+    return scanVariables, scanPoints, initialzMat
+
+
+#def pullRigidScan(logFile):
+#
+#    '''Function that pulls the values of parameters and the energy for each step in a gaussian rigid scan log file
+#
+#        Parameters:
+#         logFile: str - name of the input log file
+#         mp2: bool - flag to search for the MP2 energy instead of the HF SCF if MP2 calculation
+#
+#        Returns:
+#         eSCF: float - SCF Done energy in a.u.
+#         optimsied: bool - flags whether the structure is optimised or not
+#    '''
+#
+#    # Initialise variables
+#
+#    # Parse log file for variables
+#    with open(logFile, 'r') as input:
+#        for el in input:
+#
+#
+#
+#                # Set results array for variable results - columns are variables and
+#                scanResults = np.zeros((scanPoints, len(
+#
+#            # SCF Done precede the variable value output for the step
+#            if 'SCF Done:' in el:
+#                eSCF = float(el.split('=')[1].split()[0])
+#            # MP2 energy printed out seperately - has to be processed to float form
+#            if mp2 == True:
+#                if 'EUMP2' in el:
+#                    mp2Raw = el.split('=')[2].strip()
+#                    eSCF = float(mp2Raw.split('D')[0])*np.power(10, float(mp2Raw.split('D')[1]))
+#
+#            if 'Variable ' in el:
+#                el = input.__next__()
 

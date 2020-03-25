@@ -128,7 +128,7 @@ def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, co
     return fig, ax
 
 
-def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', save=None, colour=None):
+def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', save=None, colour=None, optFilter=True):
 
     '''
     Function which plots a 2D PES for two parameters
@@ -148,8 +148,10 @@ def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', 
 
     fig, ax = plotSetup()
 
-    # Filter out any unoptimised points
-    moleculeData = moleculeData[moleculeData.Optimised]
+    # Filter out any unoptimised points if optimised present
+    optCol = ('Optimised' in moleculeData.columns.values)
+    if all([optFilter, optCol]):
+        moleculeData = moleculeData[moleculeData.Optimised]
 
     # Set linearly spaced parameter values and define grid between them
     paramOneRange = np.linspace(moleculeData[paramOneCol].min(), moleculeData[paramOneCol].max(), 100)
@@ -167,11 +169,7 @@ def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', 
     c = ax.contourf(paramOneRange, paramTwoRange, interpE, 20, cmap=colour)
     fig.subplots_adjust(right=0.8)
     cb = fig.colorbar(c)
-    cb.set_label('Relative Energy (kJmol$^{-1}$)')
-
-    # Plot scatter points on (all; TS3b_sp; TS3b_gp_guess)
-#    ax.plot(scanResults[paramOne], scanResults[paramTwo], marker='o', alpha=0.4, linestyle=' ', color='#071047')
-#    ax.plot(2.112312163834929, 1.284186052611147, marker='o', alpha=0.7, color='#071047')
+    cb.set_label('Relative Energy (kJmol$^{-1}$)', fontsize=13)
 
     # Set x and y labels
     ax.set_xlabel(paramOneCol, fontsize=13)
@@ -214,7 +212,6 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
             colour.append(colPallete[paths.index(pInd)])
 
     # Plot the lines and points for the profile (lineBuffer and stepWidth can be altered to fit the profile)
-#    ax.scatter(reactionData['Reaction coordinate'], reactionData[quantityCol], color=colours, marker='_', s=3000, lw=5)
     for pInd, path in enumerate(paths):
         reacPathData = reactionData.loc[reactionData['Reaction path'] == path]
         ax.scatter(reacPathData['Reaction coordinate'], reacPathData[quantityCol], color=colour[pInd], marker='_', s=stepWidth, lw=5)
@@ -227,14 +224,9 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
                 stepLabel = reacPathData.index.values[rStepInd] + ' (' + str(int(reacPathData[quantityCol].iloc[rStepInd])) + ')'
                 ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-labelBuffer, reacPathData[quantityCol].iloc[rStepInd]+2, stepLabel, color=colour[pInd], fontsize=11)
 
-#                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-0.02, reacPathData[quantityCol].iloc[rStepInd]+10, reacPathData.index.values[rStepInd], color=colours[pInd], weight='bold')
-#                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-0.01, reacPathData[quantityCol].iloc[rStepInd]+3, '(' + str(int(reacPathData[quantityCol].iloc[rStepInd])) + ')', color=colours[pInd], fontsize=10)
         if label == True:
             reactantLabel = reacPathData.index.values[0] + ' (' + str(int(reacPathData[quantityCol].iloc[0])) + ')'
             ax.text(reacPathData['Reaction coordinate'].iloc[0]-labelBuffer, reacPathData[quantityCol].iloc[0]+2, reactantLabel, color=colour[pInd], fontsize=11)
-
-#            ax.text(0, reacPathData[quantityCol].iloc[0]+10, reacPathData.index.values[rStepInd], color=colours[pInd], weight='bold')
-#            ax.text(0, reacPathData[quantityCol].iloc[0]+3, '(' + str(int(reacPathData[quantityCol].iloc[0])) + ')', color=colours[pInd], fontsize=10)
 
     # Set x and y labels
     ax.set_xlabel('R$_{x}$', fontsize=13)

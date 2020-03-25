@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument("--plot", dest="plot", type=int, default=1, help="The dimensionality of the surface to be plotted, 0: no plot; 1: 1D PE profile; 2: 2D PES")
     parser.add_argument("--ptwo", dest="scanParamTwo", type=str, default=None, help="Second scan parameter (matches dataframe column header if being parsed from csv) for 2D PES")
     parser.add_argument("-s", "--save", dest="save", type=str, help="Name of file to save plot too (minus .png extension")
+    parser.add_argument("-r", "--rigid", dest="rigid", action='store_true', help="Flag for gaussian scan type, also can be used to remove filtering of unoptimised points, default: False for relaxed scan")
     args = parser.parse_args()
 
     # Unpack inputFiles and see if csv or not
@@ -49,9 +50,17 @@ if __name__ == '__main__':
 
     # Create scan molecules and csv for scan log files
     else:
-        scanFiles, scanMolecules = ml.initScan(*inputFiles, trackedParams=args.trackParamFile)
-        scanInfo = ml.pullScanInfo(inputFiles[0])
-        scanParameter = scanInfo['paramKey']
+        if args.rigid == True:
+            scanMolecules, scanInfo = ml.initRigidScan(*inputFiles, trackedParams=args.trackParamFile)
+            if len(scanInfo) == 1:
+                scanParameter = scanInfo[0]
+            elif len(scanInfo) == 2:
+                scanParameter = scanInfo[0]
+                args.scanParamTwo = scanInfo[1]
+            args.plot = len(scanInfo)
+        else:
+            scanMolecules, scanInfo = ml.initScan(*inputFiles, trackedParams=args.trackParamFile)
+            scanParameter = scanInfo['paramKey']
         scanResults = ml.moleculesToDataFrame(scanMolecules, save='ps'+scanParameter)
 
     # Plot results if wanted (sort results by parameter value first)
@@ -64,7 +73,7 @@ if __name__ == '__main__':
             args.scanParamTwo != None
         except:
             print('Second parameter not set for 2D PES')
-        fig, ax = ml.plotPES(scanResults, paramOneCol=scanParameter, paramTwoCol=args.scanParamTwo, save=args.save)
+        fig, ax = ml.plotPES(scanResults, paramOneCol=scanParameter, paramTwoCol=args.scanParamTwo, save=args.save, optFilter=(not args.rigid))
         plt.show()
 
 

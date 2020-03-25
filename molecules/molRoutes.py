@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import pandas as pd
 import molLego.utilities.analyseGaussLog as glog
+import molLego.utilities.geom as geom
 import molLego.molecules.molecules as molecules
 
 
@@ -20,7 +21,6 @@ def constructMols(systemFile, type='molecule'):
 
     Returns:
      molNames: list of str - molecule names/keys for each molecule in file [molKey in system file]
-     molFiles: list of str - molecules log file for each molecule in file
      mols: list of Molecule/MoleculeThermo objects for each molecule in system file
     '''
 
@@ -35,13 +35,13 @@ def constructMols(systemFile, type='molecule'):
             molNames.append(line.split()[0])
             molFiles.append(line.split()[1].split(','))
 
-            # Create moleucle object for first input file and sum all moleucles togetehr if multiple files
+            # Create moleucle object for first input file and sum all moleucles together if multiple files
             mols.append(molecules.initMolFromLog(molFiles[-1][0], type))
             for mFile in molFiles[-1][1:]:
                 extraMol = molecules.initMolFromLog(mFile, type)
                 mols[-1] = sumMolecules(mols[-1], extraMol)
 
-    return molNames, molFiles, mols
+    return molNames, mols
 
 
 def moleculesToDataFrame(mols, molNames=None, save=None, min=None):
@@ -120,14 +120,13 @@ def initScan(*args, trackedParams=None):
      args: str - gaussian log files of scan results
      trackedParams: [optional] str - file with tracked parameters in (gaussian indexes)
 
-    Retursn:
-     scanFiles: List of str - scan file names for each molecule object
+    Returns:
      scanMolecules: List of Molecule objects for each step of scan
     '''
 
     scanMolecules = []
-    scanFiles = []
 
+    # Parse in tracked parameters if set
     if trackedParams != None:
         parameters = parseTrackedParams(trackedParams)
     else:
@@ -141,18 +140,56 @@ def initScan(*args, trackedParams=None):
 
         for step in range(1, scanInfo['nSteps']+2):
             molecule = molecules.initMolFromLog(logFile, optStep=step)
+            molecule.setParameters(parameters)
             scanMolecules.append(molecule)
-            scanFiles.append(logFile)
 
-        # Add parameter as an attribute for each scan molecule
-        for scanMol in scanMolecules:
-            scanMol.setParameters(parameters)
-            
-
-    return scanFiles, scanMolecules
+    return scanMolecules, scanInfo
 
 
-def calcRelative(moleculeDataFull, molsToPlot=None, quantities=['E SCF (h)'], min=None):
+def initRigidScan(*args, trackedParams=None):
+
+    '''Function that generates a list of molecule objects from a rigid scan file
+
+    Parameters:
+     args: str - gaussian log files of scan results
+     trackedParams: [optional] str - file with tracked parameters in (gaussian indexes)
+
+    Returns:
+     scanMolecules: List of Molecule objects for each step of scan
+    '''
+
+    scanMolecules = []
+
+    # Parse in tracked parameters if set
+    if trackedParams != None:
+        parameters = parseTrackedParams(trackedParams)
+    else:
+        parameters = {}
+
+    for logFile in args:
+        scanVariables, scanSteps, initialzMat = glog.pullRigidScanInfo(logFile)
+
+    # Pull scan parameter info from initial z matrix (python index)
+    for atomInd, atomzMat in enumerate(initialzMat):
+        line = atomzMat.split()
+        for sV in scanVariables:
+            if sV in line:
+                indList = [atomInd]
+                for  i in range(1, line.index(sV), 2):
+                    indList.append(int(line[i]) - 1)
+                parameters[sV] = indList
+
+    # Calculate tracked and scan parameters, and energy for each step - scan to mol to df
+    for logFile in args:
+       for step in range(1, scanSteps+1):
+            molecule = molecules.initMolFromLog(logFile, optStep=step, type='spe')
+            molecule.setParameters(parameters)
+            scanMolecules.append(molecule)
+
+    return scanMolecules, scanVariables
+
+
+def calcRelative(moleculeDataFull, molsToPlot=None, quantities=['E SCF'], min=None):
 
     '''Function to process a dataframe of molecules to plot and calculates relative E (kJ/mol) [NB: Commented lines can also calcuate and normalised relative E]
 
