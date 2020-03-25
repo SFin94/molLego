@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # Open system file, create molecule objects and dataframe or parse existing data frame
     if args.inputFiles.split('.')[1] == 'conf':
-        molkeys, molfiles, molecules = ml.constructMols(sys.argv[1], type='thermal')
+        molkeys, molecules = ml.constructMols(sys.argv[1], type='thermal')
 
         # Optional - add in tracked geometric parameters if provided
         if args.trackParamFile != None:
