@@ -38,7 +38,10 @@ class Molecule():
                 parameters[param] = [pVal -1 for pVal in parameters[param]]
 
         paramValues = geom.calcParam(list(parameters.values()), self.atomCoords)
-        self.parameters = dict(zip(paramKeys, paramValues))
+        if 'parameters' in self.__dict__:
+            self.parameters.update(dict(zip(paramKeys, paramValues)))
+        else:
+            self.parameters = dict(zip(paramKeys, paramValues))
 
 
 class MoleculeThermo(Molecule):
@@ -106,7 +109,6 @@ def initMolFromLog(logFile, type='molecule', optStep=1):
     atomIDs = glog.pullAtomIDs(logFile)
 
     # If thermochemistry wanted, parse additional information
-    print(type.lower()[:4])
     if type.lower()[:5] == 'therm':
         thermo = glog.pullThermo(logFile)
         molecule = MoleculeThermo(logFile, molEnergy, molGeom, atomIDs, optimised, thermo)
@@ -142,7 +144,6 @@ def initMolFromDF(dfFileEntry, type='molecule', geom=False, optStep=1):
     '''order of thermo'''
     if type != 'molecule':
         thermo = rawDataFrame['E'], rawDataFrame['H'], rawDataFrame['G'], rawDataFrame['S'], rawDataFrame['ZPE']
-        print(thermo)
         molecule = MoleculeThermo(logFile, molEnergy, molGeom, atomIDs, thermo)
     else:
         molecule = Molecule(logFile, molEnergy, molGeom, atomIDs)
