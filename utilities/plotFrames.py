@@ -11,7 +11,7 @@ import seaborn as sns
 
 '''Script with some general plotting functions'''
 
-def plotSetup(figsizeX=12,figsizeY=10):
+def plotSetup(figsizeX=7,figsizeY=6):
 
     '''
     Function that sets some general settings for all plots
@@ -77,6 +77,48 @@ def plotMolsE(moleculeData, energyCol='Relative E', save=None, colour=None, labe
         plt.savefig(save + '.png', dpi=600)
 
     return fig, ax
+
+
+def plotMolsAll(moleculeData, save=None, labels=None):
+
+    '''
+    Function which plots molecules against relative E nd G
+
+    Parameters:
+     moleculeData: pandas DataFrame - Containing conformer names/keys and energies
+     save: str - name of image to save plot too (minus .png extension) [deafult: None type]
+     labels: list of str - list of molecule identifiers if different to data frame index [deafult: None type]
+
+    Returns:
+     fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
+
+    '''
+
+    fig, ax = plotSetup()
+
+    # Set colours for G and E
+    eColour = '#245F6B'
+    gColour = '#D17968'
+
+    # Plot products vs. energy
+    ax.scatter(moleculeData.index, moleculeData['Relative E'], color=eColour, s=70, label='$\Delta$E')
+    ax.scatter(moleculeData.index, moleculeData['Relative G'], color=gColour, s=70, label='$\Delta$G')
+
+    # Set labels and axis settings
+    if labels == None:
+        labels = list(moleculeData.index)
+
+    ax.tick_params(labelsize=10)
+    ax.set_xticklabels(labels, rotation=15, fontsize=11)
+    ax.set_ylabel('Relative E/G (kJmol$^{-1}$)', fontsize=11)
+    ax.set_xlabel('Product pair', fontsize=11)
+    ax.legend(frameon=False, loc=1)
+
+    if save != None:
+        plt.savefig(save + '.png', dpi=600)
+
+    return fig, ax
+
 
 
 def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, colour=None, scan=False):
