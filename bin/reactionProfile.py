@@ -49,7 +49,6 @@ if __name__ == '__main__':
 
         # Calculate connectivities - could be done in class?
         paths, neighbourList = ml.constructReactionPath(inputFile, reacStepNames)
-
         # Then want to plot the profile
         reactionProfile = ml.initReactionProfile(reacStepNames, reacSteps, paths)
 

@@ -30,12 +30,12 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--save", dest="save", type=str, default='', help="Name of csv file and plot to save, appended to .csv and .png extensions")
     parser.add_argument("-t", "--tparams", dest="trackParamFile", type=str, default=None, help="Name of text file containing any additional tracked parameter")
     parser.add_argument("-c", "--confs", dest="confsToPlot", type=list, default=None, help="List of the mol/conformer keys of the moelcules to be plotted from the input")
-    parser.add_argument("-q", dest="quantityToPlot", type=str, default='Relative E', help="Relative quantity to plot vs. conformers. Default: Relative E assuming thermal information available, otherwise will plot SCF Energy.")
+    parser.add_argument("--type", dest="molType", type=str, default='molecule', choices=['molecule', 'thermal'], help="Type of molecule, can be simple ('molecule') or thermal if frequency calculation has been performed for thermodynamic data")
     args = parser.parse_args()
 
     # Open system file, create molecule objects and dataframe or parse existing data frame
     if args.inputFiles.split('.')[1] == 'conf':
-        molkeys, molecules = ml.constructMols(sys.argv[1], type='thermal')
+        molkeys, molecules = ml.constructMols(sys.argv[1], type=args.molType)
 
         # Optional - add in tracked geometric parameters if provided
         if args.trackParamFile != None:
@@ -53,11 +53,10 @@ if __name__ == '__main__':
     # Process data to calculate relative values and plot conformers vs. energy (raw SCF energy if no thermal quantities available)
     if any(val == 'G' for val in molData.columns.values):
         molData = ml.calcRelative(molData, molsToPlot=args.confsToPlot, quantities=['E', 'G', 'H'])
-        fig, ax = ml.plotMolsE(molData, energyCol=args.quantityToPlot, save=args.save)
+        fig, ax = ml.plotMolsAll(molData, save=args.save)
 
     else:
-        molData = ml.calcRelative(molData, molmolsToPlot=args.confsToPlot)
-        fig, ax = ml.plotMolsE(molData, save=plotName, energyCol='Relative E SCF (h)')
+        molData = ml.calcRelative(molData, molsToPlot=args.confsToPlot)
+        fig, ax = ml.plotMolsE(molData, save=args.save, energyCol='Relative E SCF')
 
     plt.show()
-

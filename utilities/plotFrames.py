@@ -27,6 +27,8 @@ def plotSetup(figsizeX=7,figsizeY=6):
     # Set font parameters and colours
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.sans-serif'] = 'Arial'
+    colour_grey = '#3E3E3E'
+    plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey}) 
 
     # Set figure and plot param(s) vs energy
     fig, ax = plt.subplots(figsize=(figsizeX,figsizeY))
@@ -36,7 +38,7 @@ def plotSetup(figsizeX=7,figsizeY=6):
     ax.spines["bottom"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
-    ax.tick_params(labelsize=14)
+    ax.tick_params(labelsize=12)
 
     return fig, ax
 
@@ -111,7 +113,7 @@ def plotMolsAll(moleculeData, save=None, labels=None):
     ax.tick_params(labelsize=10)
     ax.set_xticklabels(labels, rotation=15, fontsize=11)
     ax.set_ylabel('Relative E/G (kJmol$^{-1}$)', fontsize=11)
-    ax.set_xlabel('Product pair', fontsize=11)
+    ax.set_xlabel('Molecule', fontsize=11)
     ax.legend(frameon=False, loc=1)
 
     if save != None:
@@ -208,10 +210,10 @@ def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', 
         colour = sns.cubehelix_palette(light=1, dark=0, as_cmap=True)
 
     # Plot filled contour and add colour bar
-    c = ax.contourf(paramOneRange, paramTwoRange, interpE, 20, cmap=colour)
+    c = ax.contourf(paramOneRange, paramTwoRange, interpE, 20, cmap=colour, vmax=150)
     fig.subplots_adjust(right=0.8)
     cb = fig.colorbar(c)
-    cb.set_label('Relative Energy (kJmol$^{-1}$)', fontsize=13)
+    cb.set_label('$\Delta$E (kJmol$^{-1}$)', fontsize=13)
 
     # Set x and y labels
     ax.set_xlabel(paramOneCol, fontsize=13)
@@ -223,7 +225,7 @@ def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', 
     return fig, ax
 
 
-def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colour=None, stepWidth=3000, lineBuffer=0.05, label=True):
+def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colour=None, stepWidth=3000, lineBuffer=0.08, label=True):
 
     '''Function which plots a reaction profile
 
@@ -261,14 +263,13 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
             ax.plot([reacPathData['Reaction coordinate'].iloc[rStepInd-1]+lineBuffer, reacPathData['Reaction coordinate'].iloc[rStepInd]-lineBuffer], [reacPathData[quantityCol].iloc[rStepInd-1], reacPathData[quantityCol].iloc[rStepInd]],  color=colour[pInd], linestyle='--')
 
             # Plot labels with dataframe index and energy label unless False, plot reactants at the end
-            # Commented lines are for two level labels
             if label == True:
                 stepLabel = reacPathData.index.values[rStepInd] + ' (' + str(int(reacPathData[quantityCol].iloc[rStepInd])) + ')'
-                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-labelBuffer, reacPathData[quantityCol].iloc[rStepInd]+2, stepLabel, color=colour[pInd], fontsize=11)
+                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-labelBuffer, reacPathData[quantityCol].iloc[rStepInd]+6, stepLabel, color=colour[pInd], fontsize=11)
 
         if label == True:
             reactantLabel = reacPathData.index.values[0] + ' (' + str(int(reacPathData[quantityCol].iloc[0])) + ')'
-            ax.text(reacPathData['Reaction coordinate'].iloc[0]-labelBuffer, reacPathData[quantityCol].iloc[0]+2, reactantLabel, color=colour[pInd], fontsize=11)
+            ax.text(reacPathData['Reaction coordinate'].iloc[0]-labelBuffer, reacPathData[quantityCol].iloc[0]+6, reactantLabel, color=colour[pInd], fontsize=11)
 
     # Set x and y labels
     ax.set_xlabel('R$_{x}$', fontsize=13)

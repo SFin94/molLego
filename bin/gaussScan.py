@@ -42,11 +42,11 @@ if __name__ == '__main__':
 
     # Parse in csv file of scan results
     if inputFiles[0].split('.')[-1] == 'csv':
-        scanResults = pd.read_csv(args.inputFiles[0])
-        try:
+        scanResults = pd.read_csv(args.inputFiles[0], index_col=0)
+        if args.scanParam != None:
             scanParameter = args.scanParam
-        except:
-            print("No scan parameter given, provide the header for the scan parameter column from csv as: -p [header]")
+        else:
+            raise Exception("No scan parameter given, provide the header for the scan parameter column from csv as: -p [header]")
 
     # Create scan molecules and csv for scan log files
     else:
