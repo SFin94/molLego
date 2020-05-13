@@ -12,7 +12,7 @@ import molLego.molecules.molecules as molecules
 def constructMols(systemFile, type='molecule'):
 
     '''Function which creates Molecule or MoleculeThermo object for each molecule in a system conf file
-    
+
     Parameters:
      systemFile: str - name of the system file containing the molecule names/keys and the log files to be parsed
             The file should be formatted:
@@ -319,10 +319,10 @@ def constructReactionPath(systemFile, molNames=None):
             if line[0] != '#':
                 molNames.append(line.split()[0])
 
-    # Set neighbour list form system file
+    # Set neighbour list from system file
     # Might not need branches, numSteps or even stepNeighbours
-    numSteps = len(input)
     branches = 1
+    numSteps = 0
     stepNeighbours = []
     for line in input:
         if line[0] != '#':
@@ -331,6 +331,7 @@ def constructReactionPath(systemFile, molNames=None):
                 branches += len(stepNeighbours[-1]) - 1
             else:
                 stepNeighbours.append([])
+            numSteps += 1
 
     # Set adjacency matrix
     adjacency = np.zeros((numSteps, numSteps))
@@ -380,4 +381,3 @@ def reacProfileToDataFrame(reactionProfile, save=None, min=None):
         rProfileData.to_csv(save + '.csv')
 
     return rProfileData
-
