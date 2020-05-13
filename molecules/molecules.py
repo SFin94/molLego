@@ -29,7 +29,13 @@ class Molecule():
 
     def setParameters(self, parameters, gaussIndex=False):
 
-        '''Class function to set dict of parameters as additional attribute'''
+        '''Class method to set dict of parameters as additional attribute
+        
+        Parameters:
+         parameters: dict - parameter key (atoms): parameter atom indexes; by default should be pythonic index
+         gaussIndex: bool - flag that can be set to True if parameters are given as gaussian indexes (start at 1) and not pythonic indexes (start at 0) 
+        '''
+
         paramKeys = list(parameters.keys())
 
         # If gaussian indexes then transform to python index
@@ -42,6 +48,18 @@ class Molecule():
             self.parameters.update(dict(zip(paramKeys, paramValues)))
         else:
             self.parameters = dict(zip(paramKeys, paramValues))
+
+
+    def reindexMolecule(self, reindex):
+
+        '''Class method to reorder a molecules geometry and atom list based on a given mapping
+    
+        Parameters:
+        reindex: list of int - list of new index positions
+        '''
+
+        self.atomCoords = self.atomCoords[reindex, :]
+        self.atoms = [self.atoms[i] for i in reindex]
 
 
 class MoleculeThermo(Molecule):
