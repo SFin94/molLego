@@ -282,3 +282,47 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
     return fig, ax
 
 
+def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=None):
+    
+    '''Function which plots conformers against several geometric parameters
+
+    Parameters:
+     conformerData: pandas DataFrame - conformer data
+     geomParameters: list of str - keys/column headings in dataframe for geometric parameters to plot conformers against
+     save: str - name of image to save plot too (minus .png extension) [deafult: None type]
+     colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
+     energy: str - energy column of dataframe to colour by [default: None type]
+
+    Returns:
+     fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
+
+    '''
+
+    fig, ax = plotSetup()
+    paramRange = range(len(geomParameters))
+    colmap = sns.cubehelix_palette(start=2.5, rot=.4, dark=0, light=0.5, as_cmap=True)
+
+    # Calculate normalised energy to plot colour by if given
+    if energy != None:
+        conformerData['Norm E'] = conformerData[energy]/conformerData[energy].max()
+        colmap = sns.cubehelix_palette(start=2.5, rot=.4, dark=0, light=0.5, as_cmap=True)
+        conformerData['Colour'] = colmap(conformerData['Norm E'])
+    else:
+    # Else set colours different for each conformer 
+        colblock = sns.cubehelix_palette(len(conformerData.index), start=.2, rot=-.2, dark=0, light=0.5)
+        conformerData['Colour'] = colblock
+
+    for cInd, conf in enumerate(conformerData.index):
+        ax.plot(paramRange, conformerData.loc[conf][geomParameters], label=conf, color=conformerData.loc[conf]['Colour'], marker='o', alpha=0.8)
+
+    # Set x and y labels and ticks
+    ax.set_xticks(paramRange)
+    ax.set_xticklabels(geomParameters, rotation=45, ha='right')
+    ax.set_ylabel('Dihedral angle')
+    ax.set_xlabel('Dihedral')
+    ax.legend()
+
+    if save != None:
+        plt.savefig(save + '.png')
+
+    return fig, ax
