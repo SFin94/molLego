@@ -300,27 +300,30 @@ def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=No
 
     fig, ax = plotSetup()
     paramRange = range(len(geomParameters))
-    colmap = sns.cubehelix_palette(start=2.5, rot=.4, dark=0, light=0.5, as_cmap=True)
 
     # Calculate normalised energy to plot colour by if given
-    if energy != None:
-        conformerData['Norm E'] = conformerData[energy]/conformerData[energy].max()
-        colmap = sns.cubehelix_palette(start=2.5, rot=.4, dark=0, light=0.5, as_cmap=True)
-        conformerData['Colour'] = colmap(conformerData['Norm E'])
+    if colour == None:
+        if energy != None:
+            conformerData['Norm E'] = conformerData[energy]/conformerData[energy].max()
+            colmap = sns.cubehelix_palette(start=2.5, rot=.4, dark=0, light=0.5, as_cmap=True)
+            conformerData['Colour'] = colmap(conformerData['Norm E'])
+        else:
+        # Else set colours different for each conformer 
+            colblock = sns.cubehelix_palette(len(conformerData.index), start=.2, rot=-.2, dark=0, light=0.5)
+            conformerData['Colour'] = colblock
     else:
-    # Else set colours different for each conformer 
-        colblock = sns.cubehelix_palette(len(conformerData.index), start=.2, rot=-.2, dark=0, light=0.5)
-        conformerData['Colour'] = colblock
+        conformerData['Colour'] = colour
 
     for cInd, conf in enumerate(conformerData.index):
         ax.plot(paramRange, conformerData.loc[conf][geomParameters], label=conf, color=conformerData.loc[conf]['Colour'], marker='o', alpha=0.8)
 
     # Set x and y labels and ticks
     ax.set_xticks(paramRange)
-    ax.set_xticklabels(geomParameters, rotation=45, ha='right')
+    ax.set_xticklabels(geomParameters, rotation=20, ha='right')
     ax.set_ylabel('Dihedral angle')
     ax.set_xlabel('Dihedral')
-    ax.legend()
+    ax.set_ylim(ymin=-180.0, ymax=180.0)
+    ax.legend(loc=1, ncol=2, frameon=False, handletextpad=0.1, fontsize=9)
 
     if save != None:
         plt.savefig(save + '.png')
