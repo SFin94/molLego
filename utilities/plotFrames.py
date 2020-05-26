@@ -306,11 +306,14 @@ def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=No
         if energy != None:
             conformerData['Norm E'] = conformerData[energy]/conformerData[energy].max()
             colmap = sns.cubehelix_palette(start=2.5, rot=.4, dark=0, light=0.5, as_cmap=True)
-            conformerData['Colour'] = colmap(conformerData['Norm E'])
+            for val in conformerData['Norm E']:
+                colour_vals = [colmap(val)[:3] for val in conformerData['Norm E']]    
+            conformerData['Colour'] = colour_vals
         else:
         # Else set colours different for each conformer 
             colblock = sns.cubehelix_palette(len(conformerData.index), start=.2, rot=-.2, dark=0, light=0.5)
             conformerData['Colour'] = colblock
+            print(conformerData['Colour'])
     else:
         conformerData['Colour'] = colour
 
