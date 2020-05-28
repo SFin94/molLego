@@ -3,22 +3,26 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import matplotlib.axes as axes
 import matplotlib.lines as mlin
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.interpolate import griddata
 import seaborn as sns
 
 
 '''Script with some general plotting functions'''
 
-def plotSetup(figsizeX=7,figsizeY=6):
+def plotSetup(figsizeX=7, figsizeY=6, fig=None, ax=None):
 
     '''
     Function that sets some general settings for all plots
 
     Parameters:
-     figsizeX: int - x dimesion of plot [default: 12]
-     figsizeY: int - y dimenaion of plot [default: 10]
+     figsizeX: int - x dimension of plot [default: 12]
+     figsizeY: int - y dimension of plot [default: 10]
+     fig: matplotlib fig object - if other type of plot is called first [default: None]
+     ax: matplotlib axes object - if other type of plot is called first [default: None]
 
     Returns:
      fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
@@ -31,13 +35,45 @@ def plotSetup(figsizeX=7,figsizeY=6):
     plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey}) 
 
     # Set figure and plot param(s) vs energy
-    fig, ax = plt.subplots(figsize=(figsizeX,figsizeY))
+    if fig == None and ax == None:
+        fig, ax = plt.subplots(figsize=(figsizeX,figsizeY))
 
     # Remove plot frame lines
     ax.spines["top"].set_visible(False)
     ax.spines["bottom"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
+    ax.tick_params(labelsize=12)
+
+    return fig, ax
+
+
+def radialPlotSetup(figsizeX=6, figsizeY=6, fig=None, ax=None):
+
+    '''
+    Function that sets some general settings for all plots
+
+    Parameters:
+     figsizeX: int - x dimension of plot [default: 12]
+     figsizeY: int - y dimension of plot [default: 10]
+     fig: matplotlib fig object - if other type of plot is called first [default: None]
+     ax: matplotlib axes object - if other type of plot is called first [default: None]
+
+    Returns:
+     fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
+    '''
+
+    # Set font parameters and colours
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = 'Arial'
+    colour_grey = '#3E3E3E'
+    plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey}) 
+
+    # Set figure and plot param(s) vs energy
+    if fig == None and ax == None:
+        fig, ax = plt.subplots(figsize=(figsizeX,figsizeY), subplot_kw=dict(projection='polar'))
+
+    # ax.spines["circle"].set_visible(False)
     ax.tick_params(labelsize=12)
 
     return fig, ax
@@ -282,13 +318,43 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
     return fig, ax
 
 
-def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=None):
+def normaliseParameters(dataframe, parameters):
+
+    # Normalise all values to plot on the scales - for distances to [0:1], for angles [0:180], dihedrals [-180:180]
+    for key, value in parameters.items():
+        if len(value) == 2:
+            dataframe[key] = (dataframe[key]-dataframe[key].min())/(dataframe[key].max() - dataframe[key].min())
+        elif len(value) == 3:
+            dataframe[key] = dataframe[key]/180.
+        else:
+            dataframe[key] = (dataframe[key] + 180.)/180.
     
-    '''Function which plots conformers against several geometric parameters
+    return dataframe
+
+
+def setConformerColours(conformerData, energy):
+
+    # Calculate normalised energy to plot colour by if given
+    if energy != None:
+        conformerData['Norm E'] = conformerData[energy]/conformerData[energy].max()
+        # colmap = sns.cubehelix_palette(start=2.5, rot=.5, dark=0, light=0.5, as_cmap=True)
+        colmap = sns.cubehelix_palette(as_cmap=True)
+        for val in conformerData['Norm E']:
+            colour_vals = [colmap(val)[:3] for val in conformerData['Norm E']]    
+        return colour_vals
+    else:
+    # Else set colours different for each conformer 
+        colblock = sns.cubehelix_palette(len(conformerData.index))
+        return colblock
+
+    
+def plotConfRadar(conformerData, geomParameters, save=None, colour=None, energy=None):
+
+    '''Function which plots conformers against several geometric parameters in a radial plot
 
     Parameters:
      conformerData: pandas DataFrame - conformer data
-     geomParameters: list of str - keys/column headings in dataframe for geometric parameters to plot conformers against
+     geomParameters: dict - keys:values are column headings to atom indexes defining the parameter
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
      energy: str - energy column of dataframe to colour by [default: None type]
@@ -298,35 +364,86 @@ def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=No
 
     '''
 
-    fig, ax = plotSetup()
-    paramRange = range(len(geomParameters))
+    fig, ax = radialPlotSetup()
 
-    # Calculate normalised energy to plot colour by if given
+    # Calculate angles to plot, set parameter list
+    numParams = len(geomParameters.keys())
+    plotAngles = [n / float(numParams) * 2 * np.pi for n in range(numParams)]
+    plotAngles += plotAngles[:1]
+    plotParams = list(geomParameters.keys())
+    plotParams.append(plotParams[0])
+
+    # Normalise conformer parameters
+    conformerData = normaliseParameters(conformerData, geomParameters)
+    
+    # Set colour
     if colour == None:
-        if energy != None:
-            conformerData['Norm E'] = conformerData[energy]/conformerData[energy].max()
-            colmap = sns.cubehelix_palette(start=2.5, rot=.4, dark=0, light=0.5, as_cmap=True)
-            for val in conformerData['Norm E']:
-                colour_vals = [colmap(val)[:3] for val in conformerData['Norm E']]    
-            conformerData['Colour'] = colour_vals
-        else:
-        # Else set colours different for each conformer 
-            colblock = sns.cubehelix_palette(len(conformerData.index), start=.2, rot=-.2, dark=0, light=0.5)
-            conformerData['Colour'] = colblock
-            print(conformerData['Colour'])
+        conformerData['Colour'] = setConformerColours(conformerData, energy)
     else:
         conformerData['Colour'] = colour
 
+    # Plot for each conformer
     for cInd, conf in enumerate(conformerData.index):
-        ax.plot(paramRange, conformerData.loc[conf][geomParameters], label=conf, color=conformerData.loc[conf]['Colour'], marker='o', alpha=0.8)
+        ax.plot(plotAngles, conformerData.loc[conf][plotParams], label=conf, color=conformerData.loc[conf]['Colour'])
+        ax.fill(plotAngles, conformerData.loc[conf][plotParams], color=conformerData.loc[conf]['Colour'], alpha=0.1)
+
+    # Set plot attributes
+    ax.set_xticks(plotAngles[:-1])
+    ax.set_xticklabels(list(geomParameters.keys()))
+    ax.set_yticks([])
+    ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, frameon=False, handletextpad=0.1, fontsize=9)
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+
+    if save != None:
+        plt.savefig(save + '.png')
+
+    return fig, ax
+
+
+def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=None):
+    
+    '''Function which plots conformers against several geometric parameters in a linear plot
+
+    Parameters:
+     conformerData: pandas DataFrame - conformer data
+     geomParameters: dict - keys:values are column headings to atom indexes defining the parameter
+     save: str - name of image to save plot too (minus .png extension) [deafult: None type]
+     colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
+     energy: str - energy column of dataframe to colour by [default: None type]
+
+    Returns:
+     fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
+
+    '''
+    
+    fig, ax = plotSetup()
+    numParams = len(geomParameters.keys())
+    plotParams = list(geomParameters.keys())
+
+    # Normalise conformer parameters
+    conformerData = normaliseParameters(conformerData, geomParameters)
+
+    # Set colour
+    if colour == None:
+        conformerData['Colour'] = setConformerColours(conformerData, energy)
+    else:
+        conformerData['Colour'] = colour
+
+    # Plot data
+    for cInd, conf in enumerate(conformerData.index):
+        ax.plot(range(numParams), conformerData.loc[conf][plotParams], label=conf, color=conformerData.loc[conf]['Colour'], marker='o', alpha=0.8)
 
     # Set x and y labels and ticks
-    ax.set_xticks(paramRange)
-    ax.set_xticklabels(geomParameters, rotation=20, ha='right')
-    ax.set_ylabel('Dihedral angle')
-    ax.set_xlabel('Dihedral')
-    ax.set_ylim(ymin=-180.0, ymax=180.0)
-    ax.legend(loc=1, ncol=2, frameon=False, handletextpad=0.1, fontsize=9)
+    ax.set_xticks(range(numParams))
+    ax.set_xticklabels(plotParams, rotation=20, ha='right')
+    ax.set_yticks([])
+
+    ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, frameon=False, handletextpad=0.1, fontsize=9)
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    
+    # if energy != None:
+    #     ax_cbar = inset_axes(ax, width="50%", height="3%", loc='upper right')
+    #     plt.colorbar(cm.ScalarMappable(cmap=colmap), ax=ax, cax=ax_cbar, orientation="horizontal", ticks=[0, 1], label='$\Delta$G')
 
     if save != None:
         plt.savefig(save + '.png')
