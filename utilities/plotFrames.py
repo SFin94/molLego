@@ -321,15 +321,19 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
 def normaliseParameters(dataframe, parameters):
 
     # Normalise all values to plot on the scales - for distances to [0:1], for angles [0:180], dihedrals [-180:180]
+    paramHeadings = []
     for key, value in parameters.items():
         if len(value) == 2:
-            dataframe[key] = (dataframe[key]-dataframe[key].min())/(dataframe[key].max() - dataframe[key].min())
+            dataframe["Norm " + key] = dataframe[key]/dataframe[key].max()
         elif len(value) == 3:
-            dataframe[key] = dataframe[key]/180.
+            dataframe["Norm " + key] = dataframe[key]/180.
         else:
-            dataframe[key] = (dataframe[key] + 180.)/180.
-    
-    return dataframe
+            dataframe["Norm " + key] = (dataframe[key]%360.)/360.
+        
+        # Set parameter heading
+        paramHeadings.append("Norm " + key)
+
+    return paramHeadings
 
 
 def setConformerColours(conformerData, energy):
@@ -370,11 +374,10 @@ def plotConfRadar(conformerData, geomParameters, save=None, colour=None, energy=
     numParams = len(geomParameters.keys())
     plotAngles = [n / float(numParams) * 2 * np.pi for n in range(numParams)]
     plotAngles += plotAngles[:1]
-    plotParams = list(geomParameters.keys())
-    plotParams.append(plotParams[0])
 
     # Normalise conformer parameters
-    conformerData = normaliseParameters(conformerData, geomParameters)
+    paramHeadings = normaliseParameters(conformerData, geomParameters)
+    paramHeadings.append(paramHeadings[0])
     
     # Set colour
     if colour == None:
@@ -384,8 +387,8 @@ def plotConfRadar(conformerData, geomParameters, save=None, colour=None, energy=
 
     # Plot for each conformer
     for cInd, conf in enumerate(conformerData.index):
-        ax.plot(plotAngles, conformerData.loc[conf][plotParams], label=conf, color=conformerData.loc[conf]['Colour'])
-        ax.fill(plotAngles, conformerData.loc[conf][plotParams], color=conformerData.loc[conf]['Colour'], alpha=0.1)
+        ax.plot(plotAngles, conformerData.loc[conf][paramHeadings], label=conf, color=conformerData.loc[conf]['Colour'])
+        ax.fill(plotAngles, conformerData.loc[conf][paramHeadings], color=conformerData.loc[conf]['Colour'], alpha=0.1)
 
     # Set plot attributes
     ax.set_xticks(plotAngles[:-1])
@@ -421,7 +424,7 @@ def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=No
     plotParams = list(geomParameters.keys())
 
     # Normalise conformer parameters
-    conformerData = normaliseParameters(conformerData, geomParameters)
+    paramHeadings = normaliseParameters(conformerData, geomParameters)
 
     # Set colour
     if colour == None:
@@ -431,12 +434,12 @@ def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=No
 
     # Plot data
     for cInd, conf in enumerate(conformerData.index):
-        ax.plot(range(numParams), conformerData.loc[conf][plotParams], label=conf, color=conformerData.loc[conf]['Colour'], marker='o', alpha=0.8)
+        ax.plot(range(numParams), conformerData.loc[conf][paramHeadings], label=conf, color=conformerData.loc[conf]['Colour'], marker='o', alpha=0.8)
 
     # Set x and y labels and ticks
     ax.set_xticks(range(numParams))
     ax.set_xticklabels(plotParams, rotation=20, ha='right')
-    ax.set_yticks([])
+    ax.set_ylim(ymin=0.0, ymax=1.0)
 
     ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, frameon=False, handletextpad=0.1, fontsize=9)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
