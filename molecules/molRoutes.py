@@ -191,15 +191,16 @@ def initRigidScan(*args, trackedParams=None):
 
 def calcRelative(moleculeDataFull, molsToPlot=None, quantities=None, min=None):
 
-    '''Function to process a dataframe of molecules to plot and calculates relative E (kJ/mol) [NB: Commented lines can also calcuate and normalised relative E]
+    '''Function to process a dataframe of molecules to plot and calculates relative E SCF (kJ/mol) or Relative E/G/H if thermodynamic properties given
 
         Parameters:
          moleculeDataFull: pandas dataFrame - full dataframe for molecules
          molsToPlot: List of str [optional, default=None] - names (.log file) of conformers to plot from the dataFile
-         energyCol: str [optional, default=None] - The quantitity/ies to plot (str should match dataframe heading). If None, sets to either E, H , G if thermodynamic data or E SCF if not
+         quantities: list of str [optional, default=None] - The quantitity/ies to plot (str should match dataframe heading). If None, sets to either E, H , G if thermodynamic data or E SCF if not
+         min: str [optional, default=None] - index of moelcule to be treated as zero reference
 
         Returns:
-         confDiheds: pandas DataFrame - dataframe of the molecules to plot with realtive and normalised E columns for plotting
+         moleculeData: pandas DataFrame - dataframe of the molecules to plot with relative (E SCF)/(E/G/H) columns for plotting
     '''
 
     # Subset amount of data frame to plot
