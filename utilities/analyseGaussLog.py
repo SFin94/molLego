@@ -25,13 +25,13 @@ class GaussianLog():
 
     def __init__(self, logfile):
 
-        '''Initialises class, runs methods to set attributes about the calcualtion type and flags for parsing properties from the file
+        '''Initialises class, runs methods to set attributes about the calculation (molecule an job details) and flags for parsing properties from the file
         '''
 
         self.file_name = logfile
         self.set_job_details()
         self.set_flags()
-        
+
 
     def set_job_details(self):
         
@@ -41,6 +41,8 @@ class GaussianLog():
          basis_set: :class:`str` - basis set input of calculation
          job_type: :class:`str` - calculation type (Opt, Fopt, Freq, SP, Scan)
          sp: :class:`bool` - flag of whether the calculation is an optimisation or single point energy calculation
+
+        Also runs set_molecule which sets the charge, numer of atoms, elements and atom ids 
         '''
 
         # Parse job and molecule information from log file
@@ -57,6 +59,9 @@ class GaussianLog():
         '''Class method that converts the job type to a set of flags showing what information is contained in the file.
         Sets class attributes:
          job_property_flags: :class:`dict` - key is property type and value is corresponding string flag for parsing property from gaussian log file
+
+        Parameters:
+         target_property: list of str - target property/ies wanted from log file; overrides dafault scheme of using job type to set them
         '''
 
         # Dict mapping job type to the properties contained in the log file
@@ -68,7 +73,7 @@ class GaussianLog():
         # Set dict of search flags for specific job type depending on properties calculated
         try:
             flag_keys = job_to_property[self.job_type.lower()]
-            self.job_property_flags = {flag: property_flags[flag] for flag in flag_keys}
+            self.job_property_flags = {prop: property_flags[prop] for prop in flag_keys}
         except:
             print('Job type is not recognised')
 
@@ -348,7 +353,7 @@ class GaussianLog():
             return False
 
 
-    def pull_properties(self, opt_steps=[1]):
+    def pull_properties(self, opt_steps=[1], target_property=None):
         
         '''Class method to parse the energy, thermodynamic data, geometry and optimised information from specified optimsation step/s in the log file for a molecule.
 
