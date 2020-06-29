@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import pandas as pd
+
 import molLego.utilities.analyseGaussLog as glog
 import molLego.utilities.geom as geom
 import molLego.molecules.molecules as molecules
@@ -9,144 +10,154 @@ import molLego.molecules.molecules as molecules
 '''A module of routines that interface with the Molecule classes'''
 
 
-def constructMols(systemFile, type='molecule'):
+def construct_mols(system_file):
 
     '''Function which creates Molecule or MoleculeThermo object for each molecule in a system conf file
 
     Parameters:
-     systemFile: str - name of the system file containing the molecule names/keys and the log files to be parsed
+     system_file: str - name of the system file containing the molecule names/keys and the log files to be parsed
             The file should be formatted:
-                molKey mol_output.log
+                mol_key mol_output.log
         Lines can be commented out with a #
 
     Returns:
-     molNames: list of str - molecule names/keys for each molecule in file [molKey in system file]
-     mols: list of Molecule/MoleculeThermo objects for each molecule in system file
+     mol_names: list of str - molecule names/keys for each molecule in file [mol_key in system file]
+     mols: list of :Molecule:/:MoleculeThermo: objects for each molecule in system file
     '''
 
-    # Read in system file
-    with open(systemFile) as file:
-        input = file.read().splitlines()
+    # Read in system conf file
+    with open(system_file) as input_file:
+        input = input_file.read().splitlines()
 
-    # Creates a molecule or thermo object for each of the molecules inputted
-    mols, molNames, molFiles = [], [], []
+    # Processes contents of file, creating amolecule or thermo object for each molecule
+    mols, mol_names, mol_files = [], [], []
     for line in input:
         if line[0] != '#':
-            molNames.append(line.split()[0])
-            molFiles.append(line.split()[1].split(','))
+            mol_names.append(line.split()[0])
+            mol_files.append(line.split()[1].split(','))
 
-            # Create moleucle object for first input file and sum all moleucles together if multiple files
-            mols.append(molecules.initMolFromLog(molFiles[-1][0], type))
-            for mFile in molFiles[-1][1:]:
-                extraMol = molecules.initMolFromLog(mFile, type)
-                mols[-1] = sumMolecules(mols[-1], extraMol)
+            # Create moleucle object for first input file and sum moleucles together if multiple files
+            mols.append(molecules.init_mol_from_log(mol_files[-1][0]))
+            for m_file in mol_files[-1][1:]:
+                extra_mol = molecules.init_mol_from_log(m_file)
+                mols[-1] = sum_molecules(mols[-1], extra_mol)
 
-    return molNames, mols
+    return mol_names, mols
 
 
-def moleculesToDataFrame(mols, molNames=None, save=None, min=None):
+def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
 
     '''Function which creates a dataframe for all of the molecules and can write to a csv
 
     Parameters:
      mols: list of Molecule or MoleculeThermo objects - instances for each molecule
-     molNames [optional, default=None]: list - molecule names/keys
+     mol_names [optional, default=None]: list - molecule names/keys
      save [optional, default=None]: str - name of file to write dataframe to (without csv extension)
+     min [optional, default=None]: str - name of the molecule to calculate all values relative too. If not defined then relative values are calculated w.r.t. lowest value for each quantity.
+
+    Returns:
+     molecule_df: pandas dataframe - dataframe of all molecules with realtive quantities calcualted
     '''
 
     # Create a dataframe of molecule attributes depending on object type (Molecule or MoleculeThermo)
     data = []
     for ind, mol in enumerate(mols):
-        propDict = {'File': mol.logFile, 'E SCF (h)': mol.escf, 'Optimised': mol.optimised}
+        properties = {'File': mol.file_name, 'E SCF (h)': mol.escf, 'Optimised': mol.optimised}
 
         if hasattr(mol, 'e'):
-            propDict.update({'E': mol.e, 'H': mol.h, 'G': mol.g, 'S': mol.s, 'ZPE': mol.zpe})
+            properties.update({'E': mol.e, 'H': mol.h, 'G': mol.g, 'S': mol.s, 'ZPE': mol.zpe})
             quantity = ['E', 'H', 'G']
         else:
             quantity = ['E SCF']
-            propDict.update({'E SCF': mol.escf*2625.5})
-        data.append(propDict)
+            properties.update({'E SCF': mol.escf*2625.5})
+        data.append(properties)
 
         if hasattr(mol, 'parameters'):
-            propDict.update(mol.parameters)
-    if molNames == None:
-        molNames = []
-        [molNames.append(mol.logFile.split('/')[-1][:-4]) for mol in mols]
-        moleculeData = pd.DataFrame(data)
-    moleculeData = pd.DataFrame(data, index=molNames)
+            properties.update(mol.parameters)
+    if mol_names == None:
+        mol_names = []
+        [mol_names.append(mol.file_name.split('/')[-1][:-4]) for mol in mols]
+        molecule_df = pd.DataFrame(data)
+    molecule_df = pd.DataFrame(data, index=mol_names)
 
     # Calculate the relative thermodynamic quantities
-    moleculeData = calcRelative(moleculeData, quantities=quantity, min=min)
+    molecule_df = calcRelative(molecule_df, quantities=quantity, min=min)
 
     # Writes dataframe to file if filename provided
     if save != None:
-        moleculeData.to_csv(save + '.csv')
-    return moleculeData
+        molecule_df.to_csv(save + '.csv')
+    return molecule_df
 
 
-def parseTrackedParams(systemFile):
+def parse_tracked_params(system_file):
 
     '''Function which parses any additional parameters to be tracked from an input file
 
         Input:
-         inputfile: str - name of input .txt file which contains any additional parameters to be tracked across the scan
+         system_file: str - name of input .txt file which contains any additional parameters to be tracked across the scan
 
          Format of input file:
-             paramName (atomTypes) atomInd1 atomInd2 [atomInd3 atomInd4]
+             param_name (atom_types) atom1_ind atom2_ind [atom3_ind atom4_ind]
              E.g. OPSC 3 1 2 7
 
         Returns:
-         trackedParams: dict:
-                         key: str - paramName
-                         value: list of ints - [atomIndexes]
+         tracked_params: dict:
+                         key: str - param_name
+                         value: list of ints - [atom_indexes]
     '''
 
     # Initialise empty dict for params
-    trackedParams = {}
+    tracked_params = {}
     # Parse in file and seperate the indexes from the parameter ID and save as an entry to the dict
-    with open(systemFile, 'r') as input:
+    with open(system_file, 'r') as input:
         for el in input:
             param = el.strip().split(' ')
             indexes = [int(ind)-1 for ind in param[1:]]
-            trackedParams[param[0]] = indexes
-    return trackedParams
+            tracked_params[param[0]] = indexes
+    return tracked_params
 
 
-def initScan(*args, trackedParams=None):
+def init_scan(*args, tracked_params=None):
 
     '''Function that generates a list of molecule objects from a scan file
 
     Parameters:
      args: str - gaussian log files of scan results
-     trackedParams: [optional] str - file with tracked parameters in (gaussian indexes)
+     tracked_params: [optional] str - file with tracked parameters in (gaussian indexes)
 
     Returns:
-     scanMolecules: List of Molecule objects for each step of scan
+     scan_molecules: List of Molecule objects for each step of scan
     '''
 
-    scanMolecules = []
+    # Inititalise variables
+    scan_molecules = []
 
     # Parse in tracked parameters if set
-    if trackedParams != None:
-        parameters = parseTrackedParams(trackedParams)
+    if tracked_params != None:
+        parameters = parse_tracked_params(tracked_params)
     else:
         parameters = {}
 
-    for logFile in args:
+    for i, input_file in enumerate(args):
+
         # Get scanInfo - modRed input
-        scanInfo = glog.pullScanInfo(logFile)
-        parameters[scanInfo['paramKey']] = scanInfo['atomInd']
-        # Test to see if param is the same here - else flag warning
+        scan_file = glog.GaussianLog(input_file)
+        scan_info = scan_file.set_scan_info()
+        
+        # Set scan parameter in parameters dict and range of opt steps in file
+        parameters[scan_info['param_key']] = scan_info['atom_inds']
+        opt_steps = list(range(1, scan_info['num_steps']+2))
+        
+        # Create molecule object for each scan step in input files
+        if i == 0:
+            scan_molecules = molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
+        else:
+            scan_molecules.append(molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters))
 
-        for step in range(1, scanInfo['nSteps']+2):
-            molecule = molecules.initMolFromLog(logFile, optStep=step)
-            molecule.setParameters(parameters)
-            scanMolecules.append(molecule)
-
-    return scanMolecules, scanInfo
+    return scan_molecules
 
 
-def initRigidScan(*args, trackedParams=None):
+def init_rigid_scan(*args, tracked_params=None):
 
     '''Function that generates a list of molecule objects from a rigid scan file
 
@@ -158,15 +169,16 @@ def initRigidScan(*args, trackedParams=None):
      scanMolecules: List of Molecule objects for each step of scan
     '''
 
-    scanMolecules = []
+    scan_molecules = []
 
     # Parse in tracked parameters if set
-    if trackedParams != None:
-        parameters = parseTrackedParams(trackedParams)
+    if tracked_params != None:
+        parameters = parse_tracked_params(tracked_params)
     else:
         parameters = {}
 
-    for logFile in args:
+    for i, input_file in enumerate(args):
+    for logile in args:
         scanVariables, scanSteps, initialzMat = glog.pullRigidScanInfo(logFile)
 
     # Pull scan parameter info from initial z matrix (python index)
@@ -182,7 +194,7 @@ def initRigidScan(*args, trackedParams=None):
     # Calculate tracked and scan parameters, and energy for each step - scan to mol to df
     for logFile in args:
        for step in range(1, scanSteps+1):
-            molecule = molecules.initMolFromLog(logFile, optStep=step, type='spe')
+            molecule = molecules.init_mol_from_log(logFile, optStep=step, type='spe')
             molecule.setParameters(parameters)
             scanMolecules.append(molecule)
 
@@ -312,18 +324,18 @@ def initReactionProfile(reacStepNames, reacSteps, paths):
     return reactionProfile
 
 
-def constructReactionPath(systemFile, molNames=None):
+def constructReactionPath(system_file, mol_names=None):
 
     # Read in system file
-    with open(systemFile) as file:
+    with open(system_file) as file:
         input = file.read().splitlines()
 
-    # Parse molNames from system file if not already created
-    if molNames == None:
-        molNames = []
+    # Parse mol_names from system file if not already created
+    if mol_names == None:
+        mol_names = []
         for line in input:
             if line[0] != '#':
-                molNames.append(line.split()[0])
+                mol_names.append(line.split()[0])
 
     # Set neighbour list from system file
     # Might not need branches, numSteps or even stepNeighbours
@@ -343,7 +355,7 @@ def constructReactionPath(systemFile, molNames=None):
     adjacency = np.zeros((numSteps, numSteps))
     for node, edgeSet in enumerate(stepNeighbours):
         for edge in edgeSet:
-            adjacency[node, molNames.index(edge)] = 1
+            adjacency[node, mol_names.index(edge)] = 1
 
     # Calculate path list from adjacency
     pathList = []
