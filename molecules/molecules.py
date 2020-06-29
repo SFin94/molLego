@@ -130,16 +130,16 @@ def init_mol_from_log(logfile, opt_steps=[1], parameters=None):
     mol_results = job.pull_properties(opt_steps=opt_steps)
 
     # Initiate Molecule or MoleculeThermo object for each molecule
-    for mol in mol_results.values():
+    for i, mol in enumerate(mol_results.values()):
         if 'thermo' in list(job.job_property_flags.keys()):
             molecule = MoleculeThermo(job.file_name, mol['energy'], mol['geom'], job.atom_ids, mol['opt'], mol['thermo'])
         else:
             molecule = Molecule(job.file_name, mol['energy'], mol['geom'], job.atom_ids, mol['opt'])
-        
+
         # Set parameters for each molecule if given
         if parameters != None:
             molecule.set_parameters(parameters)
-
+   
         # Test if single or multiple molecules to return or append
         if len(mol_results) == 1:
             return molecule
