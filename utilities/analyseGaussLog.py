@@ -19,8 +19,6 @@ class GaussianLog():
         atom_number: :class:`int` - number of atoms in molecule
         elements: :class:`list of str` - list of elements present in molecule
         job_property_flags: :class:`dict` - key is property type and value is corresponding string flag for parsing property from gaussian log file
-        
-
     '''
 
     def __init__(self, logfile):
@@ -46,12 +44,24 @@ class GaussianLog():
         '''
 
         # Parse job and molecule information from log file
-        raw_output = self.pull_job_details().split('\\')
-        self.job_type, self.method, self.basis_set  = raw_output[3:6]
+        raw_output, modred = self.pull_job_details()
+
+        # Process raw_output and set job attributes
+        raw_output = raw_output.split('\\')
+        self.job_type = raw_output[3].lower()
+        self.method, self.basis_set  = raw_output[4:6]
         self.set_molecule(raw_output[6])
 
         # Set spe flag if single point and no optimisation steps
         self.spe = (self.job_type.lower() == 'sp')
+        
+        # Set different job types for rigid and relaxed scans
+        if self.job_type.lower() == 'scan':
+            if modred == True:
+                self.job_type = 'scan_relaxed'
+            else:
+                self.job_type = 'scan_rigid'
+                self.spe = True
 
 
     def set_flags(self):
@@ -65,7 +75,7 @@ class GaussianLog():
         '''
 
         # Dict mapping job type to the properties contained in the log file
-        job_to_property = {'opt': ['energy', 'geom', 'opt'], 'freq': ['energy', 'geom','thermo', 'opt'], 'fopt': ['energy', 'geom', 'thermo', 'opt'], 'sp': ['energy', 'geom'], 'scan': ['energy', 'geom', 'opt']}
+        job_to_property = {'opt': ['energy', 'geom', 'opt'], 'freq': ['energy', 'geom','thermo', 'opt'], 'fopt': ['energy', 'geom', 'thermo', 'opt'], 'sp': ['energy', 'geom'], 'scan_relaxed': ['energy', 'geom', 'opt'], 'scan_rigid': ['energy', 'geom']}
 
         # Dict of search flags in log file for each property
         property_flags = {'energy': 'SCF Done', 'geom': 'Standard orientation', 'opt': 'Optimized Parameters', 'thermo': 'Thermochemistry'}
@@ -197,6 +207,8 @@ class GaussianLog():
     def pull_job_details(self):
 
         '''Class method that pulls job details from the gaussian log file
+        Sets private class attribute:
+         _modred: :class:`bool` - flag to tell rigid and relaxed scans apart
 
         Returns:
          job_details: str - information from the end of the file containing some job details (method, basis set, job type and molecular formula)
@@ -204,14 +216,18 @@ class GaussianLog():
         
         # Set flag for the section to parse
         final_info_flag = '1\\1\\'
+        modredundant_flag = 'modredundant'
+        modred = False
 
         # Iterate through file and pulls final section
         with open(self.file_name, 'r') as input:
             for line in input:
                 if final_info_flag in line:
                     job_details = self._pull_job(input, line)
+                elif modredundant_flag in line.lower():
+                    modred = True
 
-        return job_details
+        return job_details, modred
 
 
     def _pull_geometry(self, input, current_line):
@@ -345,7 +361,7 @@ class GaussianLog():
          bool - (acts as 0/1 value for updating the opt count)
         '''
         
-        if property == 'geom':
+        if property == 'energy':
             return self.spe
         elif property == 'opt':
             return (not self.spe)
@@ -358,7 +374,7 @@ class GaussianLog():
         '''Class method to parse the energy, thermodynamic data, geometry and optimised information from specified optimsation step/s in the log file for a molecule.
 
         Parameters:
-         opt_steps: list of int - target optimisation/geometry step/s wanted from the scan (rigid scan sp=True; realaxed scan sp=False) or optimisation trajectory (sp=True)
+         opt_steps: list of int - target optimisation/geometry step/s wanted from the scan (rigid scan sp=True; relaxed scan sp=False) or optimisation trajectory (sp=True)
 
         Returns:
          mol_results: dict of dicts-  containing target properties for the molecule with the key as the optimisation/sp count [opt_steps]
@@ -397,7 +413,7 @@ class GaussianLog():
 
     def _pull_modredundant(self, input):
 
-        '''Class method that pulls the scan inofrmation from the log file
+        '''Class method that pulls the scan information from the log file
 
         Parameters: 
          input: iter object - lines of file
@@ -454,10 +470,10 @@ class GaussianLog():
 
     def set_scan_info(self):
 
-        '''Class method that sets scan information for rigid or relaxed? scan from a gaussian log file
+        '''Class method that sets scan information for relaxed scan from a gaussian log file
 
         Returns:
-        scanInfo: dict -
+        scan_info: dict -
             {param_key: str - '-' seperated atom id + index of all atoms in scan parameter e.g. 'H1-O2'
             atom_inds: list of int - indexes of the atoms in scan parameter,
             num_steps: int - number of scan steps
@@ -479,49 +495,118 @@ class GaussianLog():
         return scan_info
 
 
+    def _pull_rigid_scan(self, input):
 
-# def pullRigidScanInfo(logFile):
+        '''Class method that pulls the rigid scan information from the log file
 
-#     '''Function that pulls the variables and energy for each step in a gaussian rigid scan log file
+        Parameters: 
+         input: iter object - lines of file
 
-#         Parameters:
-#          logFile: str - name of the input log file
+        Returns: 
+         initial_zmat: list of str - the initial z matrix for the molecule
+         variables: list of str - unprocessed lines of information for any set variables in the z matrix
+        '''
 
-#         Returns:
-#          eSCF: float - SCF Done energy in a.u.
-#          optimsied: bool - flags whether the structure is optimised or not
-#     '''
+        # Initialise variables
+        initial_zmat = []
+        variables = []
+        variables_flag = 'Variables'
 
-#     # Initialise variables
-#     scanVars = [] # Make a list of dict with entries to match the details (name, starting value, steps, step size')
-#     scanPoints = 1
-#     initialzMat = []
-#     scanVariables = []
+        # File is ordered to give initial z matrix, a header 'Variables' and then the variables with no blank lines in between
+        current_line = input.__next__()
 
-#     # pull log file for variables
-#     with open(logFile, 'r') as input:
-#         for line in input:
+        # Pull all lines of the initial z matrix from the file
+        while variables_flag not in current_line:
+            initial_zmat.append(current_line.strip())
+            current_line = input.__next__()
+        current_line = input.__next__()
 
-#             # Pulls initial z matrix
-#             if 'Charge' in line:
-#                 line = input.__next__()
-#                 while 'Variables:' not in line:
-#                     initialzMat.append(line.strip())
-#                     line = input.__next__()
+        # Pull all variables lines from file
+        while current_line.strip() != '':
+            variables.append(current_line.split())
+            current_line = input.__next__()
+        
+        return variables, initial_zmat
 
-#             # Set dicts of scan variables
-#             if 'Variables:' in line:
-#                 line = input.__next__()
-#                 while line.strip() != '':
-#                     varInput = line.split()
-#                     scanVariables.append(varInput[0])
-#                     currentScanVar = {'Name': varInput[0], 'Initial value': float(varInput[1][:-4]), 'Steps': int(varInput[2]), 'Step size' : float(varInput[3])}
-#                     scanVars.append(currentScanVar)
-#                     scanPoints *= (currentScanVar['Steps'] + 1)
-#                     line = input.__next__()
-#                 break
 
-#     return scanVariables, scanPoints, initialzMat
+    def _process_rigid_scan(self, variables, initial_zmat):
+
+        '''Class method that processes raw rigid scan input to scan information for each scan parameter
+
+        Parameters:
+            initial_zmat: list of str - the initial z matrix for the molecule
+            variables: list of str - unprocessed lines of information for any set variables in the z matrix
+            
+        Returns:
+        scanInfo: dict of dicts -
+            Has an entry for each scan parameter where key is the variable name in the zmatrix and value:
+            {param_key: str - '-' seperated atom id + index of all atoms in scan parameter e.g. 'H1-O2'
+            atom_inds: list of int - indexes of the atoms in scan parameter,
+            num_steps: int - number of scan steps
+            step_size: float - size of the scan step}
+        '''
+
+        # Intialise variables
+        total_scan_steps = 1
+        scan_info = {}
+
+        # Iterate over the variable entries to locate scan parameters
+        for var_line in variables:
+            if any('Scan' in var for var in var_line):
+
+                # Set the number of steps and step size for each scanned parameter
+                num_steps = int(var_line[2])
+                total_scan_steps *= (num_steps+1)
+                step_size = float(var_line[3])
+                scan_info[var_line[0]] = {'num_steps': num_steps, 'step_size': step_size}
+        
+        # Find zmatrix line containing each scan variable
+        for atom, atom_zmat in enumerate(initial_zmat):
+            for scan_variable in list(scan_info.keys()):
+                if scan_variable in atom_zmat:
+
+                    # Set scan parameter and atom inds (python index) from initial z matrix
+                    atom_inds = [atom]
+                    param_key = self.atom_ids[atom] + str(atom+1)
+                    atom_entry = atom_zmat.split()
+                    for i in range(1, atom_entry.index(scan_variable), 2):
+                        index = int(atom_entry[i]) - 1
+                        atom_inds.append(index)
+                        param_key += ('-' + self.atom_ids[index] + atom_entry[i])
+
+                    # Set the scan parameter key and atom inds for each variable in the scan_info dict
+                    scan_info[scan_variable]['atom_inds'] = atom_inds
+                    scan_info[scan_variable]['param_key'] = param_key
+                    
+        return scan_info
+
+
+    def set_rigid_scan_info(self):
+
+        '''Class method that sets scan information for rigid scan from a gaussian log file
+
+            Parameters:
+
+            Returns:
+            scanInfo: dict -
+                {param_key: str - '-' seperated atom id + index of all atoms in scan parameter e.g. 'H1-O2'
+                atom_inds: list of int - indexes of the atoms in scan parameter,
+                num_steps: int - number of scan steps
+                step_size: float - size of the scan step}
+        '''
+        
+        zmat_start_flag = 'Charge'
+
+        # Iterate through file and pull relevant input sections
+        with open(self.file_name, 'r') as input:
+            for line in input:
+                if zmat_start_flag in line:
+                    variables, initial_zmat = self._pull_rigid_scan(input)
+                    break
+        rigid_scan_info = self._process_rigid_scan(variables, initial_zmat)
+
+        return rigid_scan_info
+
 
 
 

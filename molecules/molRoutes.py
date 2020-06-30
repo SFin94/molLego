@@ -140,13 +140,24 @@ def init_scan(*args, tracked_params=None):
 
     for i, input_file in enumerate(args):
 
-        # Get scanInfo - modRed input
+        # Initialise gaussian log file object
         scan_file = glog.GaussianLog(input_file)
-        scan_info = scan_file.set_scan_info()
-        
-        # Set scan parameter in parameters dict and range of opt steps in file
-        parameters[scan_info['param_key']] = scan_info['atom_inds']
-        opt_steps = list(range(1, scan_info['num_steps']+2))
+
+        # Get scan info - depending if rigid or relaxed scan
+        if scan_file.job_type == 'scan_relaxed':
+            scan_info = scan_file.set_scan_info()
+            # Set scan parameter in parameters dict and range of opt steps in file
+            parameters[scan_info['param_key']] = scan_info['atom_inds']
+            opt_steps = list(range(1, scan_info['num_steps']+2))
+        else:
+            # If rigid scan then needs more processing as potentially has mutltiple scan parameters
+            rigid_scan_info = scan_file.set_rigid_scan_info()
+            total_scan_steps = 1
+            # Set scan parameters in parameters dict and range of opt steps in file
+            for scan_parameter in list(rigid_scan_info.values()):
+                parameters[scan_parameter['param_key']] = scan_parameter['atom_inds']
+                total_scan_steps *= (scan_parameter['num_steps'] + 1)
+            opt_steps = list(range(1, total_scan_steps+1))
         
         # Create molecule object for each scan step in input files
         if i == 0:
@@ -154,90 +165,46 @@ def init_scan(*args, tracked_params=None):
         else:
             scan_molecules.append(molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters))
 
-    return scan_molecules
+    return scan_molecules      
 
 
-def init_rigid_scan(*args, tracked_params=None):
-
-    '''Function that generates a list of molecule objects from a rigid scan file
-
-    Parameters:
-     args: str - gaussian log files of scan results
-     trackedParams: [optional] str - file with tracked parameters in (gaussian indexes)
-
-    Returns:
-     scanMolecules: List of Molecule objects for each step of scan
-    '''
-
-    scan_molecules = []
-
-    # Parse in tracked parameters if set
-    if tracked_params != None:
-        parameters = parse_tracked_params(tracked_params)
-    else:
-        parameters = {}
-
-    for i, input_file in enumerate(args):
-    for logile in args:
-        scanVariables, scanSteps, initialzMat = glog.pullRigidScanInfo(logFile)
-
-    # Pull scan parameter info from initial z matrix (python index)
-    for atomInd, atomzMat in enumerate(initialzMat):
-        line = atomzMat.split()
-        for sV in scanVariables:
-            if sV in line:
-                indList = [atomInd]
-                for  i in range(1, line.index(sV), 2):
-                    indList.append(int(line[i]) - 1)
-                parameters[sV] = indList
-
-    # Calculate tracked and scan parameters, and energy for each step - scan to mol to df
-    for logFile in args:
-       for step in range(1, scanSteps+1):
-            molecule = molecules.init_mol_from_log(logFile, optStep=step, type='spe')
-            molecule.setParameters(parameters)
-            scanMolecules.append(molecule)
-
-    return scanMolecules, scanVariables
-
-
-def calcRelative(moleculeDataFull, molsToPlot=None, quantities=None, min=None):
+def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
 
     '''Function to process a dataframe of molecules to plot and calculates relative E SCF (kJ/mol) or Relative E/G/H if thermodynamic properties given
 
         Parameters:
-         moleculeDataFull: pandas dataFrame - full dataframe for molecules
-         molsToPlot: List of str [optional, default=None] - names (.log file) of conformers to plot from the dataFile
-         quantities: list of str [optional, default=None] - The quantitity/ies to plot (str should match dataframe heading). If None, sets to either E, H , G if thermodynamic data or E SCF if not
+         mols_data_full: pandas DataFrame - full dataframe for molecules
+         mols_to_plot: List of str [optional, default=None] - names (.log file) of conformers to plot from the dataFile
+         quantities: list of str [optional, default=None] - The quantitity/ies to plot (str should match dataframe heading). If None, sets to either E, H, G if thermodynamic data or E SCF if not
          min: str [optional, default=None] - index of moelcule to be treated as zero reference
 
         Returns:
-         moleculeData: pandas DataFrame - dataframe of the molecules to plot with relative (E SCF)/(E/G/H) columns for plotting
+         mols_data: pandas DataFrame - dataframe of the molecules to plot with relative (E SCF)/(E/G/H) columns for plotting
     '''
 
     # Subset amount of data frame to plot
-    if molsToPlot != None:
-        moleculeData = moleculeDataFull.reindex(molsToPlot)
+    if mols_to_plot != None:
+        mols_data = mols_data_full.reindex(mols_to_plot)
     else:
-        moleculeData = moleculeDataFull
+        mols_data = mols_data_full
 
     # Calculate relative and normalised quantities
     if quantities == None:
-        if 'G' in list(moleculeData.columns):
+        if 'G' in list(mols_data.columns):
             quantities = ['E', 'H', 'G']
         else:
             quantities = ['E SCF']
     for q in quantities:
         if min != None:
-            zero = moleculeData[q][min]
+            zero = mols_data[q][min]
         else:
-            zero = moleculeData[q].min()
-        moleculeData['Relative '+q] = moleculeData[q] - zero
+            zero = mols_data[q].min()
+        mols_data['Relative '+q] = mols_data[q] - zero
 
-    return moleculeData
+    return mols_data
 
 
-def sumMolecules(*args):
+def sum_mols(*args):
 
     '''Function that adds two molecules together to creat a new one, e.g. for a reactant or product set
 
@@ -245,49 +212,50 @@ def sumMolecules(*args):
      args: Molecule objects - the molecules to be added
 
     Returns:
-     newMolecule - ::class:: object for a molecule
+     new_mol - ::class:: object for a molecule
 
     '''
 
     # Set sums for quantities and empty lists
-    escfSum = 0.0
-    atomList, logFiles = [], []
+    escf_sum = 0.0
+    atom_list, logfiles = [], []
     optimised = True
+    thermo = False
 
+    # Check if Molecue/MoleculeThermo object for summing thermo properties or not
     if hasattr(args[0], 'e'):
-        type = 'thermo'
-        eSum, gSum, hSum, sSum, zpeSum = 0.0, 0.0, 0.0, 0.0, 0.0
-    else:
-        type = 'molecule'
-
+        thermo = True
+        # Thermo sums in order of e, h, g, s, zpe
+        thermo_sums = [0.0, 0.0, 0.0, 0.0, 0.0]
+    
     # Add values for each molecule to quantity sums
     for mol in args:
 
-        logFiles.append(mol.logFile)
-        atomList.append(mol.atoms)
-        escfSum += mol.escf
+        # Combine shared Molecue/MoleculeThermo properties of logfile, atom ids and SCF energy
+        logfiles.append(mol.logfile)
+        atom_list.append(mol.atoms)
+        escf_sum += mol.escf
 
+        # Check if molecules are optimised
         if mol.optimised == False:
             optimised = False
             print('Warning, one molecule in complex is not optimised')
 
-        if type == 'thermo':
+        # Sum thermodynamic values if present
+        if thermo == True:
             try:
-                eSum += mol.e
-                hSum += mol.h
-                gSum += mol.g
-                sSum += mol.s
-                zpeSum += mol.zpe
+                for i, thermo_val in enumerate([mol.e, mol.h, mol.g, mol.s, mol.zpe]):
+                    thermo_sums[i] += thermo_val
             except AttributeError:
                 print('Molecule does not have correct thermodynamic values to be summed')
 
     # Instantiate molecule class with summed values
-    if type == 'thermo':
-        newMolecule = molecules.MoleculeThermo(logFiles, escfSum, molGeom=None, atomIDs=atomList, optimised=optimised, thermo=[eSum, hSum, gSum, sSum, zpeSum])
+    if thermo == True:
+        new_mol = molecules.MoleculeThermo(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atomList, optimised=optimised, thermo=thermo_sums)
     else:
-        newMolecule = molecules.Molecule(logFiles, escfSum, molGeom=None, atomIDs=atomList, optimised=optimised)
+        new_mol = molecules.Molecule(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atomList, optimised=optimised,)
 
-    return newMolecule
+    return new_mol
 
 
 def initReactionProfile(reacStepNames, reacSteps, paths):
