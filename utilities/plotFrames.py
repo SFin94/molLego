@@ -13,7 +13,7 @@ import seaborn as sns
 
 '''Script with some general plotting functions'''
 
-def plotSetup(figsizeX=7, figsizeY=6, fig=None, ax=None):
+def plot_setup(figsizeX=7, figsizeY=6, fig=None, ax=None):
 
     '''
     Function that sets some general settings for all plots
@@ -48,7 +48,7 @@ def plotSetup(figsizeX=7, figsizeY=6, fig=None, ax=None):
     return fig, ax
 
 
-def radialPlotSetup(figsizeX=6, figsizeY=6, fig=None, ax=None):
+def radial_plot_setup(figsizeX=6, figsizeY=6, fig=None, ax=None):
 
     '''
     Function that sets some general settings for all plots
@@ -79,14 +79,14 @@ def radialPlotSetup(figsizeX=6, figsizeY=6, fig=None, ax=None):
     return fig, ax
 
 
-def plotMolsE(moleculeData, energyCol='Relative E', save=None, colour=None, labels=None):
+def plot_mols_E(mol_data, energy_col='Relative E', save=None, colour=None, labels=None):
 
     '''
     Function which plots molecules/conformers against the relative energy
 
     Parameters:
-     moleculeData: pandas DataFrame - Containing conformer names/keys and energies
-     energyCol: str - header for relative energy column in dataframe [default: 'Relative E']
+     mol_data: pandas DataFrame - Containing conformer names/keys and energies
+     energy_col: str - header for relative energy column in dataframe [default: 'Relative E']
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      colour: colour (matplotlib) - colour to plot the conformers in [default: None type]. If default then a cubehelix colour is used.
 
@@ -95,16 +95,16 @@ def plotMolsE(moleculeData, energyCol='Relative E', save=None, colour=None, labe
 
     '''
 
-    fig, ax = plotSetup()
+    fig, ax = plot_setup()
 
     if colour == None:
         colour = sns.cubehelix_palette(8, start=.5, rot=-.4, dark=0, light=0.5)
 
     # Plot conformer vx. relative energy
-    ax.scatter(list(moleculeData.index), moleculeData[energyCol], marker='o', alpha=0.8, color=colour[5], s=70)
+    ax.scatter(list(mol_data.index), mol_data[energy_col], marker='o', alpha=0.8, color=colour[5], s=70)
 
     if labels == None:
-        labels = moleculeData.index
+        labels = mol_data.index
 
     # Set x and y labels and ticks
     ax.set_xticklabels(labels, rotation=45)
@@ -117,13 +117,13 @@ def plotMolsE(moleculeData, energyCol='Relative E', save=None, colour=None, labe
     return fig, ax
 
 
-def plotMolsAll(moleculeData, save=None, labels=None):
+def plot_mols_all(mol_data, save=None, labels=None):
 
     '''
-    Function which plots molecules against relative E nd G
+    Function which plots molecules against relative E and G
 
     Parameters:
-     moleculeData: pandas DataFrame - Containing conformer names/keys and energies
+     mol_data: pandas DataFrame - Containing conformer names/keys and energies
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      labels: list of str - list of molecule identifiers if different to data frame index [deafult: None type]
 
@@ -132,19 +132,19 @@ def plotMolsAll(moleculeData, save=None, labels=None):
 
     '''
 
-    fig, ax = plotSetup()
+    fig, ax = plot_setup()
 
     # Set colours for G and E
-    eColour = '#245F6B'
-    gColour = '#D17968'
+    e_colour = '#245F6B'
+    g_colour = '#D17968'
 
     # Plot products vs. energy
-    ax.scatter(moleculeData.index, moleculeData['Relative E'], color=eColour, s=70, label='$\Delta$E')
-    ax.scatter(moleculeData.index, moleculeData['Relative G'], color=gColour, s=70, label='$\Delta$G')
+    ax.scatter(mol_data.index, mol_data['Relative E'], color=e_colour, s=70, label='$\Delta$E')
+    ax.scatter(mol_data.index, mol_data['Relative G'], color=g_colour, s=70, label='$\Delta$G')
 
     # Set labels and axis settings
     if labels == None:
-        labels = list(moleculeData.index)
+        labels = list(mol_data.index)
 
     ax.tick_params(labelsize=10)
     ax.set_xticklabels(labels, rotation=15, fontsize=11)
@@ -158,18 +158,17 @@ def plotMolsAll(moleculeData, save=None, labels=None):
     return fig, ax
 
 
-
-def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, colour=None, scan=False):
+def plot_param_E(mol_data, parameter_col, energy_col='Relative E SCF', save=None, colour=None, scan=False):
 
     '''
     Function which plots molecules/conformers against the relative energy
 
     Parameters:
-     moleculeData: pandas DataFrame - Containing conformer names/keys and energies
-     paramCol: str - header for parameter column in dataframe
-     energyCol: str - header for relative energy column in dataframe [default: 'Relative E']
+     mol_data: pandas DataFrame - Containing conformer names/keys and energies
+     parameter_col: str - header for parameter column in dataframe
+     energy_col: str - header for relative energy column in dataframe [default: 'Relative E']
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
-     colour: colour (matplotlib) - colour to plot the conformers in [default: None type; if default then a cubehelix colour is used].
+     colour: colour (matplotlib) - colour to plot the conformers in [default: None type; sets colour].
      scan: bool - flag of whether a scan is being plotted, if true then links the scatterpoints with a line
 
     Returns:
@@ -177,30 +176,35 @@ def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, co
 
     '''
 
-    fig, ax = plotSetup()
+    fig, ax = plot_setup()
 
-    # Set colours for plotting
-    if 'Optimised' in moleculeData.columns.values:
-        if colour == None:
-            colour = [sns.cubehelix_palette(8, start=2.1, dark=0, light=0.5)[5], sns.cubehelix_palette(8, dark=0, light=0.5)[5]]
-            colour = [sns.cubehelix_palette(8)[5], sns.cubehelix_palette(8, rot=-.4)[5]]
-        colList = []
-        [colList.append(colour[opt]) for opt in moleculeData['Optimised']]
+    # Set colours for plotting if not provided
+    if colour == None:
+        colour = ['#D17968', '#12304e']
+    elif len(colour[0]) == 1:
+        colour = [colour]
+    
+    # Set colours depending on whether molecule is optimised or just as same colour if not opt data
+    if 'Optimised' in mol_data.columns.values:
+        colour_list = []
+        [colour_list.append(colour[opt]) for opt in mol_data['Optimised']]
+    elif len(colour) == len(list(mol_data.index)):
+        colour_list = colour
     else:
-        colList = [colour]*len(list(moleculeData.index))
+        colour_list = [colour[0]]*len(list(mol_data.index))
 
     # Plot points and connecting lines if scan
-    ax.scatter(moleculeData[paramCol], moleculeData[energyCol], color=colList, marker='o', s=70, alpha=0.8)
+    ax.scatter(mol_data[parameter_col], mol_data[energy_col], color=colour_list, marker='o', s=70, alpha=0.8)
     if scan == True:
-        ax.plot(moleculeData[paramCol], moleculeData[energyCol], marker=None, alpha=0.4, color=colour[1])
+        ax.plot(mol_data[parameter_col], mol_data[energy_col], marker=None, alpha=0.4, color=colour[1])
 
     # Set x and y labels
-    ax.set_xlabel(paramCol, fontsize=14)
-    ax.set_ylabel('$\Delta$E (kJmol$^{-1}$)', fontsize=14)
+    ax.set_xlabel(parameter_col, fontsize=11)
+    ax.set_ylabel('$\Delta$E (kJmol$^{-1}$)', fontsize=11)
 
     # Set legend to show unopt vs. opt points
-    if 'Optimised' in moleculeData.columns.values:
-        ax.legend(handles=[mlin.Line2D([], [], color=colour[0], label='Unoptimised', marker='o', alpha=0.6, linestyle=' '), mlin.Line2D([], [], color=colour[1], label='Optimised', marker='o', alpha=0.6, linestyle=' ')], frameon=False, handletextpad=0.1, fontsize=14)
+    if 'Optimised' in mol_data.columns.values:
+        ax.legend(handles=[mlin.Line2D([], [], color=colour[0], label='Unoptimised', marker='o', alpha=0.6, linestyle=' '), mlin.Line2D([], [], color=colour[1], label='Optimised', marker='o', alpha=0.6, linestyle=' ')], frameon=False, handletextpad=0.1, fontsize=10)
 
     if save != None:
         plt.savefig(save + '.png', dpi=600)
@@ -208,16 +212,16 @@ def plotParamE(moleculeData, paramCol, energyCol='Relative E SCF', save=None, co
     return fig, ax
 
 
-def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', save=None, colour=None, optFilter=True):
+def plot_PES(mol_data, parameter_cols, energy_col='Relative E SCF', save=None, colour=None, opt_filter=True):
 
     '''
     Function which plots a 2D PES for two parameters
 
      Parameters:
-      moleculeData: pandas DataFrame - Containing conformer names/keys and energies
+      mol_data: pandas DataFrame - Containing conformer names/keys and energies
       paramOneCol: str - header for first parameter column in dataframe
       paramTwoCol: str - header for second parameter column in dataframe
-      energyCol: str - header for relative energy column in dataframe [default: 'Relative E']
+      energy_col: str - header for relative energy column in dataframe [default: 'Relative E']
       save: str - name of image to save plot too (minus .png extension) [deafult: None type]
       colour: colour (matplotlib cmap) - colour map to plot the PES [default: None type; if default then a cubehelix colour map is used].
 
@@ -226,34 +230,34 @@ def plotPES(moleculeData, paramOneCol, paramTwoCol, energyCol='Relative E SCF', 
 
      '''
 
-    fig, ax = plotSetup()
+    fig, ax = plot_setup()
 
     # Filter out any unoptimised points if optimised present
-    optCol = ('Optimised' in moleculeData.columns.values)
-    if all([optFilter, optCol]):
-        moleculeData = moleculeData[moleculeData.Optimised]
+    opt_col = ('Optimised' in mol_data.columns.values)
+    if all([opt_filter, opt_col]):
+        mol_data = mol_data[mol_data.Optimised]
 
     # Set linearly spaced parameter values and define grid between them
-    paramOneRange = np.linspace(moleculeData[paramOneCol].min(), moleculeData[paramOneCol].max(), 100)
-    paramTwoRange = np.linspace(moleculeData[paramTwoCol].min(), moleculeData[paramTwoCol].max(), 100)
-    paramOneGrid, paramTwoGrid = np.meshgrid(paramOneRange, paramTwoRange)
+    param_one_range = np.linspace(mol_data[parameter_cols[0]].min(), mol_data[parameter_cols[0]].max(), 100)
+    param_two_range = np.linspace(mol_data[parameter_cols[1]].min(), mol_data[parameter_cols[1]].max(), 100)
+    param_one_grid, param_two_grid = np.meshgrid(param_one_range, param_two_range)
 
     # Interpolate the energy data on to the grid points for plotting
-    interpE = griddata((moleculeData[paramOneCol].values, moleculeData[paramTwoCol].values), moleculeData[energyCol], (paramOneGrid, paramTwoGrid))
+    interp_E = griddata((mol_data[parameter_cols[0]].values, mol_data[parameter_cols[1]].values), mol_data[energy_col], (param_one_grid, param_two_grid))
 
     # Set cmap if none provided
     if colour == None:
-        colour = sns.cubehelix_palette(light=1, dark=0, as_cmap=True)
+        colour = sns.cubehelix_palette(dark=0, as_cmap=True)
 
     # Plot filled contour and add colour bar
-    c = ax.contourf(paramOneRange, paramTwoRange, interpE, 20, cmap=colour, vmax=150)
+    c = ax.contourf(param_one_range, param_two_range, interp_E, 20, cmap=colour, vmax=150)
     fig.subplots_adjust(right=0.8)
     cb = fig.colorbar(c)
     cb.set_label('$\Delta$E (kJmol$^{-1}$)', fontsize=13)
 
     # Set x and y labels
-    ax.set_xlabel(paramOneCol, fontsize=13)
-    ax.set_ylabel(paramTwoCol, fontsize=13)
+    ax.set_xlabel(parameter_cols[0], fontsize=13)
+    ax.set_ylabel(parameter_cols[1], fontsize=13)
 
     if save != None:
         plt.savefig(save + '.png')
@@ -267,7 +271,7 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
 
     Parameters:
      reactionData: pandas DataFrame
-     energyCol: str - header for relative energy column in dataframe [default: 'Relative E']
+     energy_col: str - header for relative energy column in dataframe [default: 'Relative E']
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
      stepWidth: int - the marker size of the scatter hlines used to mark the reaction steps [default: 3000]
@@ -279,7 +283,7 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
 
     '''
 
-    fig, ax = plotSetup()
+    fig, ax = plot_setup()
     paths = list(reactionData['Reaction path'].unique())
     labelBuffer = lineBuffer - 0.01
 
@@ -419,7 +423,7 @@ def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=No
 
     '''
     
-    fig, ax = plotSetup()
+    fig, ax = plot_setup()
     numParams = len(geomParameters.keys())
     plotParams = list(geomParameters.keys())
 

@@ -81,7 +81,7 @@ def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
     molecule_df = pd.DataFrame(data, index=mol_names)
 
     # Calculate the relative thermodynamic quantities
-    molecule_df = calcRelative(molecule_df, quantities=quantity, min=min)
+    molecule_df = calc_relative(molecule_df, quantities=quantity, min=min)
 
     # Writes dataframe to file if filename provided
     if save != None:
@@ -151,10 +151,10 @@ def init_scan(*args, tracked_params=None):
             opt_steps = list(range(1, scan_info['num_steps']+2))
         else:
             # If rigid scan then needs more processing as potentially has mutltiple scan parameters
-            rigid_scan_info = scan_file.set_rigid_scan_info()
+            scan_info = scan_file.set_rigid_scan_info()
             total_scan_steps = 1
             # Set scan parameters in parameters dict and range of opt steps in file
-            for scan_parameter in list(rigid_scan_info.values()):
+            for scan_parameter in list(scan_info.values()):
                 parameters[scan_parameter['param_key']] = scan_parameter['atom_inds']
                 total_scan_steps *= (scan_parameter['num_steps'] + 1)
             opt_steps = list(range(1, total_scan_steps+1))
@@ -165,7 +165,7 @@ def init_scan(*args, tracked_params=None):
         else:
             scan_molecules.append(molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters))
 
-    return scan_molecules      
+    return scan_molecules, scan_info      
 
 
 def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
@@ -258,41 +258,41 @@ def sum_mols(*args):
     return new_mol
 
 
-def initReactionProfile(reacStepNames, reacSteps, paths):
+def init_reaction_profile(reac_step_names, reac_steps, paths):
 
     '''Function that creates a reaction profile object for a reaction path
 
     Parameters:
-     reacStepNames: list - str identifiers of the unique steps on the reaction profile
-     reacSteps: list - ThermoMolecular objects of the unique steps on the reaction profile
+     reac_step_names: list - str identifiers of the unique steps on the reaction profile
+     reac_steps: list - MoleculeThermo objects of the unique steps on the reaction profile
      paths: list - indexes of the steps making up each reaction path in the profile
 
     Returns:
-     reactionProfile: list of :class:objects -  List of ReactionPath objects containing the molecules in the path
+     reaction_profile: list of :class:objects -  List of ReactionPath objects containing the molecules in the path
     '''
 
     # Set initial variables
-    reactionProfile = []
+    reaction_profile = []
 
-    for reactionPath in paths:
-        reactantsNode = reactionPath[0]
-        pathMolecules = [reacSteps[reactantsNode]]
-        pathNames = [reacStepNames[reactantsNode]]
+    for reaction_path in paths:
+        reactants_node = reaction_path[0]
+        path_molecules = [reac_steps[reactants_node]]
+        path_names = [reac_step_names[reactants_node]]
 
         # For each seperate path create a ReactionPath object
-        for pathStep in reactionPath[1:]:
-            if pathStep == reactantsNode:
-                reactionProfile.append(molecules.ReactionPath(pathMolecules, pathNames))
-                pathMolecules = []
-                pathNames = []
-            pathMolecules.append(reacSteps[pathStep])
-            pathNames.append(reacStepNames[pathStep])
-        reactionProfile.append(molecules.ReactionPath(pathMolecules, pathNames))
+        for path_step in reaction_path[1:]:
+            if path_step == reactants_node:
+                reaction_profile.append(molecules.ReactionPath(path_molecules, path_names))
+                path_molecules = []
+                path_names = []
+            path_molecules.append(reac_steps[path_step])
+            path_names.append(reac_step_names[path_step])
+        reaction_profile.append(molecules.ReactionPath(path_molecules, path_names))
 
-    return reactionProfile
+    return reaction_profile
 
 
-def constructReactionPath(system_file, mol_names=None):
+def construct_reaction_path(system_file, mol_names=None):
 
     # Read in system file
     with open(system_file) as file:
@@ -308,62 +308,62 @@ def constructReactionPath(system_file, mol_names=None):
     # Set neighbour list from system file
     # Might not need branches, numSteps or even stepNeighbours
     branches = 1
-    numSteps = 0
-    stepNeighbours = []
+    num_steps = 0
+    step_neighbours = []
     for line in input:
         if line[0] != '#':
             if len(line.split()) > 2:
-                stepNeighbours.append(line.split()[2].split(','))
-                branches += len(stepNeighbours[-1]) - 1
+                step_neighbours.append(line.split()[2].split(','))
+                branches += len(step_neighbours[-1]) - 1
             else:
-                stepNeighbours.append([])
-            numSteps += 1
+                step_neighbours.append([])
+            num_steps += 1
 
     # Set adjacency matrix
-    adjacency = np.zeros((numSteps, numSteps))
-    for node, edgeSet in enumerate(stepNeighbours):
-        for edge in edgeSet:
+    adjacency = np.zeros((num_steps, num_steps))
+    for node, edgeSet in enumerate(step_neighbours):
+        for edge in edge_set:
             adjacency[node, mol_names.index(edge)] = 1
 
     # Calculate path list from adjacency
-    pathList = []
-    reactantNodes = np.nonzero(np.sum(adjacency, axis=0) == 0)[0]
-    for rNode in reactantNodes:
-        pathList.append(trackReactionPath(rNode, adjacency))
+    path_list = []
+    reactant_nodes = np.nonzero(np.sum(adjacency, axis=0) == 0)[0]
+    for r_node in reactant_nodes:
+        pathList.append(trackReactionPath(r_node, adjacency))
 
-    return pathList, stepNeighbours
+    return path_list, step_neighbours
 
 
-def trackReactionPath(currentStep, adjacency, path=[]):
+def track_reaction_path(current_step, adjacency, path=[]):
 
-    path = path + [currentStep]
-    if np.count_nonzero(adjacency[currentStep,:]) == 0:
+    path = path + [current_step]
+    if np.count_nonzero(adjacency[current_step,:]) == 0:
         return path
 
     paths = []
-    nextPaths = np.nonzero(adjacency[currentStep,:])[0]
-    for nP in nextPaths:
-        nextStep = trackReactionPath(nP, adjacency, path)
-        for nS in nextStep:
-            paths.append(nS)
+    next_path = np.nonzero(adjacency[current_step,:])[0]
+    for np in next_path:
+        next_step = trackReactionPath(np, adjacency, path)
+        for ns in next_step:
+            paths.append(ns)
     return paths
 
 
-def reacProfileToDataFrame(reactionProfile, save=None, min=None):
+def reaction_profile_to_dataframe(reaction_profile, save=None, min=None):
 
-    rProfileData = pd.DataFrame()
+    reaction_profile_data = pd.DataFrame()
 
     # For each reaction path create dataframe then append additional columns
-    for rPathInd, reactionPath in enumerate(reactionProfile):
-        rPathData = moleculesToDataFrame(reactionPath.reacSteps, reactionPath.reacStepNames, min=min)
-        rPathData['Reaction coordinate'] = reactionPath.reacCoord
-        rPathData['Reaction path'] = [rPathInd]*len(reactionPath.reacStepNames)
+    for i, reaction_path in enumerate(reactionProfile):
+        rpath_data = mols_to_dataframe(reaction_path.reac_steps, reaction_path.reac_step_names, min=min)
+        rpath_data['Reaction coordinate'] = reaction_path.reac_coord
+        rpath_data['Reaction path'] = [i]*len(reaction_path.reac_step_names)
 
-        rProfileData = rProfileData.append(rPathData)
+        reaction_profile_data = reaction_profile_data.append(rpath_data)
 
 
     # Writes dataframe to file if filename provided
     if save != None:
-        rProfileData.to_csv(save + '.csv')
+        reaction_profile_data.to_csv(save + '.csv')
 
-    return rProfileData
+    return reaction_profile_data
