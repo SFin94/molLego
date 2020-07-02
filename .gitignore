@@ -4,3 +4,4 @@ testFuncs.py
 *.csv
 dist
 molLego.egg-info
+tests/*

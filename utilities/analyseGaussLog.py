@@ -45,7 +45,7 @@ class GaussianLog():
 
         # Parse job and molecule information from log file
         raw_output, modred = self.pull_job_details()
-
+        
         # Process raw_output and set job attributes
         raw_output = raw_output.split('\\')
         self.job_type = raw_output[3].lower()
@@ -108,6 +108,8 @@ class GaussianLog():
             if mol_formula[-2] =='-':
                 self.charge *= -1
         mol_formula = mol_formula.split('(')[0]
+        
+        return mol_formula
 
 
     def _set_character(self, char):
@@ -138,7 +140,7 @@ class GaussianLog():
         i = 0
 
         # Set charge and remove any charge info from molecular formula
-        self._set_charge(mol_formula)
+        mol_formula = self._set_charge(mol_formula)
 
         while i < len(mol_formula)-1:
             char = mol_formula[i]
@@ -406,8 +408,15 @@ class GaussianLog():
                     mol_results[opt_count] = step_result
                     step_result = {}
                 
-                    # Return if results calculated for all optimisation steps
+                    # Check if results calculated for all optimisation steps
                     if opt_step_ind == len(opt_steps):
+
+                        # Pull thermodynamic information if property (occurs past opt_count update flag)
+                        if 'thermo' in self.job_property_flags.keys():
+                            while self.job_property_flags['thermo'] not in line:
+                                line = input.__next__()
+                            mol_results[opt_count]['thermo'] = pull_functions['thermo'](input, line)
+
                         return mol_results
 
 
