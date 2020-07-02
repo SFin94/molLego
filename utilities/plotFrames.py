@@ -341,11 +341,11 @@ def normalise_parameters(conformer_data, geom_parameters):
     param_headings = []
     for key, value in geom_parameters.items():
         if len(value) == 2:
-            dataframe["Norm " + key] = dataframe[key]/dataframe[key].max()
+            conformer_data["Norm " + key] = conformer_data[key]/conformer_data[key].max()
         elif len(value) == 3:
-            dataframe["Norm " + key] = dataframe[key]/180.
+            conformer_data["Norm " + key] = conformer_data[key]/180.
         else:
-            dataframe["Norm " + key] = (dataframe[key]%360.)/360.
+            conformer_data["Norm " + key] = (conformer_data[key]%360.)/360.
         
         # Set parameter heading
         param_headings.append("Norm " + key)
