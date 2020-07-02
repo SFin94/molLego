@@ -295,12 +295,12 @@ def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, c
         for p_ind in range(len(paths)):
             colour.append(col_pallete[paths.index(p_ind)])
 
-    # Plot the lines and points for the profile (lineBuffer and stepWidth can be altered to fit the profile)
+    # Plot the lines and points for the profile (line_buffer and step_width can be altered to fit the profile)
     for p_ind, path in enumerate(paths):
         reac_path_data = reaction_data.loc[reaction_data['Reaction path'] == path]
-        ax.scatter(reac_path_data['Reaction coordinate'], reac_path_data[quantity_col], color=colour[p_ind], marker='_', s=stepWidth, lw=5)
+        ax.scatter(reac_path_data['Reaction coordinate'], reac_path_data[quantity_col], color=colour[p_ind], marker='_', s=step_width, lw=5)
         for rstep_ind in range(1, len(reac_path_data)):
-            ax.plot([reac_path_data['Reaction coordinate'].iloc[rstep_ind-1]+lineBuffer, reac_path_data['Reaction coordinate'].iloc[rstep_ind]-lineBuffer], [reac_path_data[quantity_col].iloc[rstep_ind-1], reac_path_data[quantity_col].iloc[rstep_ind]],  color=colour[p_ind], linestyle='--')
+            ax.plot([reac_path_data['Reaction coordinate'].iloc[rstep_ind-1]+line_buffer, reac_path_data['Reaction coordinate'].iloc[rstep_ind]-line_buffer], [reac_path_data[quantity_col].iloc[rstep_ind-1], reac_path_data[quantity_col].iloc[rstep_ind]],  color=colour[p_ind], linestyle='--')
 
             # Plot labels with dataframe index and energy label unless False, plot reactants at the end
             if label == True:
@@ -322,11 +322,24 @@ def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, c
     return fig, ax
 
 
-def normalise_parameters(dataframe, parameters):
+def normalise_parameters(conformer_data, geom_parameters):
 
-    # Normalise all values to plot on the scales - for distances to [0:1], for angles [0:180], dihedrals [-180:180]
+    '''Function that updates parameter values in a dataframe to normalise all bond/angle/dihedral parameters to share the same axis for visualisation (all scaled to 0:1 range)
+
+    Distances are normalised to [0:1] range
+    Angles are mapped from [0:180] range to [0:1] range
+    Dihedrals are mapped from [-180:180] range to [0:1] range
+
+    Parameters:
+     conformer_data: pandas DataFrame - conformer dataframe with parameters in to be normalised
+     geom_parameters: dict - keys:values are column headings to atom indexes defining the parameter
+    
+    Returns:
+     param_headings: list of str - parameter headings for the normalised parameters
+    '''
+
     param_headings = []
-    for key, value in parameters.items():
+    for key, value in geom_parameters.items():
         if len(value) == 2:
             dataframe["Norm " + key] = dataframe[key]/dataframe[key].max()
         elif len(value) == 3:
@@ -340,7 +353,17 @@ def normalise_parameters(dataframe, parameters):
     return param_headings
 
 
-def set_conformer_colours(conformer_data, energy):
+def set_conformer_colours(conformer_data, energy_col):
+
+    '''Function that sets the colour for different conformers which can be normalised by energy values
+
+    Parameters:
+     conformer_data: pandas DataFrame - conformer data
+     energy_col: str - name of the dataframe column header corresponding to the thermodynamic quantity to normalise the colours of the conformers too
+
+    Returns:
+     colblock/col_vals: list - colour code corresponding to each conformer 
+    '''
 
     # Calculate normalised energy to plot colour by if given
     if energy != None:
@@ -428,11 +451,11 @@ def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energ
     plot_params = list(geom_parameters.keys())
 
     # Normalise conformer parameters
-    param_headings = normaliseParameters(conformer_data, geom_parameters)
+    param_headings = normalise_parameters(conformer_data, geom_parameters)
 
     # Set colour
     if colour == None:
-        conformer_data['Colour'] = setConformerColours(conformer_data, energy)
+        conformer_data['Colour'] = set_conformer_colours(conformer_data, energy)
     else:
         conformer_data['Colour'] = colour
 
