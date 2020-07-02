@@ -366,8 +366,8 @@ def set_conformer_colours(conformer_data, energy_col):
     '''
 
     # Calculate normalised energy to plot colour by if given
-    if energy != None:
-        conformer_data['Norm E'] = conformer_data[energy]/conformer_data[energy].max()
+    if energy_col != None:
+        conformer_data['Norm E'] = conformer_data[energy_col]/conformer_data[energy_col].max()
         # colmap = sns.cubehelix_palette(start=2.5, rot=.5, dark=0, light=0.5, as_cmap=True)
         colmap = sns.cubehelix_palette(as_cmap=True)
         for val in conformer_data['Norm E']:
@@ -379,7 +379,7 @@ def set_conformer_colours(conformer_data, energy_col):
         return colblock
 
     
-def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, energy=None):
+def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, energy_col=None):
 
     '''Function which plots conformers against several geometric parameters in a radial plot
 
@@ -388,7 +388,7 @@ def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, ene
      geom_parameters: dict - keys:values are column headings to atom indexes defining the parameter
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
-     energy: str - energy column of dataframe to colour by [default: None type]
+     energy_col: str - energy column of dataframe to colour by [default: None type]
 
     Returns:
      fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
@@ -408,7 +408,7 @@ def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, ene
     
     # Set colour
     if colour == None:
-        conformer_data['Colour'] = set_conformer_colours(conformer_data, energy)
+        conformer_data['Colour'] = set_conformer_colours(conformer_data, energy_col)
     else:
         conformer_data['Colour'] = colour
 
@@ -430,7 +430,7 @@ def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, ene
     return fig, ax
 
 
-def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energy=None):
+def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energy_col=None):
     
     '''Function which plots conformers against several geometric parameters in a linear plot
 
@@ -439,7 +439,7 @@ def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energ
      geom_parameters: dict - keys:values are column headings to atom indexes defining the parameter
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
-     energy: str - energy column of dataframe to colour by [default: None type]
+     energy_col: str - energy column of dataframe to colour by [default: None type]
 
     Returns:
      fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
@@ -455,7 +455,7 @@ def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energ
 
     # Set colour
     if colour == None:
-        conformer_data['Colour'] = set_conformer_colours(conformer_data, energy)
+        conformer_data['Colour'] = set_conformer_colours(conformer_data, energy_col)
     else:
         conformer_data['Colour'] = colour
 
@@ -471,7 +471,7 @@ def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energ
     ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, frameon=False, handletextpad=0.1, fontsize=9)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
     
-    # if energy != None:
+    # if energy_col != None:
     #     ax_cbar = inset_axes(ax, width="50%", height="3%", loc='upper right')
     #     plt.colorbar(cm.ScalarMappable(cmap=colmap), ax=ax, cax=ax_cbar, orientation="horizontal", ticks=[0, 1], label='$\Delta$G')
 
