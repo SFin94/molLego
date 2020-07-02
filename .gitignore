@@ -5,3 +5,4 @@ testFuncs.py
 dist
 molLego.egg-info
 tests/*
+*.DS_Store
