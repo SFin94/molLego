@@ -12,50 +12,56 @@ if __name__ == '__main__':
         The input file can be ana existing .csv or a .conf file.
 
         The .conf file should be formatted as:
-            molKey molFile nextReactionStep
+            mol_key mol_file next_reaction_step
+        Where mol_key is an identifier for the current reaction step, mol_file is the corresponding log file and next_reaction_step is the mol_key for the connecting following reaction step(s) [None for products]
 
+        E.g. for the reaction path: A --> B --> C
+            A   a.log   B
+            B   b.log   C
+            C   c.log
     '''
 
     usage = "usage: %(prog)s [inputFile(s)] [args]"
     parser = argparse.ArgumentParser(usage=usage)
 
     # Currently one input file only
-    parser.add_argument("inputFiles", type=str, help="The .conf file with the reaction system and log files in or a .csv file of reaction data")
-    parser.add_argument("-s", "--save", dest="save", type=str, default='', help="Name of csv file and plot to save, appended to _rSteps.csv, _rProfile.csv and _rPrfofile.png")
-    parser.add_argument("-t", "--tparams", dest="trackParamFile", type=str, default=None, help="Name of text file containing any additional tracked parameter")
-    parser.add_argument("-c", "--colour", dest="plotColour", nargs='*', default=None, help="List of colour RGB codes (starting with '#' for plotting the reaction profile in")
+    parser.add_argument("input", type=str, help="The .conf file with the reaction system and log files in or a .csv file of reaction data")
+    parser.add_argument("-s", "--save", dest="save", type=str, default='', help="Name of csv file and plot to save, appended to _rsteps.csv, _rprofile.csv and _rprofile.png")
+    parser.add_argument("-t", "--tparams", dest="track_param_file", type=str, default=None, help="Name of text file containing any additional tracked parameter")
+    parser.add_argument("-c", "--colour", dest="plot_colour", nargs='*', default=None, help="List of colour RGB codes (starting with '#' for plotting the reaction profile in")
     parser.add_argument("-z", "--zero", "--min", dest="min", type=str, default=None, help="The reaction point (identifier in csv file) for the reaction steps to be calculated relative to")
+    
+    # Unpack args and input file
     args = parser.parse_args()
+    input_file = args.input_file
 
-    # Unpack inputFiles and see if csv or not
-    inputFile = args.inputFiles
-
-    # Parse in csv file of scan results
-    if inputFile.split('.')[-1] == 'csv':
-        reactionProfileData = pd.read_csv(inputFile, index_col=0)
+    # Read in if csv file or process reaction pathways from .conf file
+    if input_file.split('.')[-1] == 'csv':
+        reaction_profile_data = pd.read_csv(input_file, index_col=0)
 
     else:
 
         # Reads in reaction conf file and creates a molecule object for each reaction step
-        reacStepNames, reacSteps = ml.constructMols(inputFile, type='thermal')
-        if args.trackParamFile != None:
-            parameters = ml.parseTrackedParams(args.trackParamFile)
-            for rStep in reacSteps:
-                if rStep.atomCoords is not None:
-                    rStep.setParameters(parameters)
+        reac_step_names, reac_steps = ml.construct_mols(input_file, type='thermal')
+        if args.track_param_file != None:
+            parameters = ml.parse_tracked_params(args.track_param_file)
+            for step in reac_steps:
+                if step.geom is not None:
+                    step.set_parameters(parameters)
 
         # Creates dataframe of all reaction steps (global relatives and no repeats)
-        reactionStepsData = ml.moleculesToDataFrame(reacSteps, molNames=reacStepNames, save=args.save + '_rSteps')
+        reaction_steps_data = ml.mols_to_dataframe(reac_steps, mol_names=reac_step_names, save=args.save + '_rsteps')
 
-        # Calculate connectivities - could be done in class?
-        paths, neighbourList = ml.constructReactionPath(inputFile, reacStepNames)
-        # Then want to plot the profile
-        reactionProfile = ml.initReactionProfile(reacStepNames, reacSteps, paths)
+        # Calculate the reaction paths 
+        reaction_paths = ml.construct_reaction_path(input_file, reac_step_names)
+        # Initilise ReactionPath objects for each of the reaction pathways
+        reaction_profile = ml.init_reaction_profile(reac_step_names, reac_steps, reaction_paths)
 
         # Create reaction profile data frame
-        reactionProfileData = ml.reacProfileToDataFrame(reactionProfile, save=args.save + '_rProfile', min=args.min)
+        reaction_profile_data = ml.reac_profile_to_dataframe(reaction_profile, save=args.save + '_rprofile', min=args.min)
 
-    fig, ax = ml.plotReactionProfile(reactionProfileData, save=args.save, colour=args.plotColour)
+    # Plot reaction profile
+    fig, ax = ml.plot_reaction_profile(reaction_profile_data, save=args.save, colour=args.plot_colour)
     plt.show()
 
 

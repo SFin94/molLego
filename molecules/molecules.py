@@ -18,9 +18,9 @@ class Molecule():
 
     '''
 
-    def __init__(self, logfile, mol_energy, mol_geom, atom_ids, optimised=False):
+    def __init__(self, input_file, mol_energy, mol_geom, atom_ids, optimised=False):
 
-        self.file_name = logfile
+        self.file_name = input_file
         self.escf = mol_energy
         self.atom_ids = atom_ids
         self.atom_number = len(atom_ids)
@@ -64,7 +64,7 @@ class Molecule():
         '''
 
         self.geom = self.geom[reindex, :]
-        self.atoms = [self.atoms[i] for i in reindex]
+        self.atom_ids = [self.atom_ids[i] for i in reindex]
 
 
 class MoleculeThermo(Molecule):
@@ -79,10 +79,10 @@ class MoleculeThermo(Molecule):
         zpe: :class:`float` - zero-point energy of the molecule (kJ/mol)
     '''
 
-    def __init__(self, logfile, mol_energy, mol_geom, atom_ids, optimised, thermo):
+    def __init__(self, input_file, mol_energy, mol_geom, atom_ids, optimised, thermo):
 
         # Set thermodynamic values (energy, enthalpy, Gibbs free energy, entropy, zpe) for molecule
-        super().__init__(logfile, mol_energy, mol_geom, atom_ids, optimised)
+        super().__init__(input_file, mol_energy, mol_geom, atom_ids, optimised)
         self.e, self.h, self.g, self.s, self.zpe = thermo
 
 
@@ -90,7 +90,7 @@ class ReactionPath():
 
     '''Class attributes:
 
-        reac_steps: :class:`ThermoMolecule object` - steps of the reaction profile
+        reac_steps: :class:`MoleculeThermo objects` - molecule for each step of the reaction profile
         reac_step_names: :class:`list` - str identifiers for each reaction step in the profile
         reac_coord: :class:`` - floats between 0 and 1 of the reaction coordinate for each step
          NB: This can either be calculated assuming equal spacing or passed explicitly
@@ -111,7 +111,7 @@ class ReactionPath():
 
 def init_mol_from_log(logfile, opt_steps=[1], parameters=None):
 
-    '''Function that initiates a molecule or moleculeThermo object from a gaussian log file
+    '''Function that initiates a Molecule or MoleculeThermo object from a gaussian log file
 
     Parameters:
      logfile: str - name of the gaussian log file
@@ -150,6 +150,45 @@ def init_mol_from_log(logfile, opt_steps=[1], parameters=None):
         else:
             molecules.append(molecule)
     return molecules
+
+
+def init_reaction_profile(reac_step_names, reac_steps, paths):
+
+    '''Function that initiates a ReactionProfile object for a reaction path
+
+    Parameters:
+     reac_step_names: list - str identifiers of the unique steps on the reaction profile
+     reac_steps: list - MoleculeThermo objects of the unique steps on the reaction profile
+     paths: nested list - indexes of the steps making up each reaction path in the profile
+
+    Returns:
+     reaction_profile: list of :class:objects -  List of ReactionPath objects containing the molecules in the path
+    '''
+
+    # Inititalise variables
+    reaction_profile = []
+
+    # For each reaction path create a ReactionProfile object and append each object to a list of all paths for the reaction profile
+    for reaction_path in paths:
+
+        # Set initial reaction path variables for the starting molecule on the path (the reactant)
+        reactants_node = reaction_path[0]
+        path_molecules = [reac_steps[reactants_node]]
+        path_names = [reac_step_names[reactants_node]]
+
+        # For each seperate path create a ReactionPath object
+        for path_step in reaction_path[1:]:
+            if path_step == reactants_node:
+                reaction_profile.append(ReactionPath(path_molecules, path_names))
+                path_molecules = []
+                path_names = []
+            path_molecules.append(reac_steps[path_step])
+            path_names.append(reac_step_names[path_step])
+        reaction_profile.append(ReactionPath(path_molecules, path_names))
+
+    return reaction_profile
+
+
 
 
 # def initMolFromDF(data_file, geom=False, optStep=1):

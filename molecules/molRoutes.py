@@ -29,18 +29,20 @@ def construct_mols(system_file):
     with open(system_file) as input_file:
         input = input_file.read().splitlines()
 
-    # Processes contents of file, creating amolecule or thermo object for each molecule
+    # Initialise variables
     mols, mol_names, mol_files = [], [], []
+
+    # Processes contents of .conf file to a list of mol_names and corresponding mol_files
     for line in input:
         if line[0] != '#':
             mol_names.append(line.split()[0])
             mol_files.append(line.split()[1].split(','))
-
-            # Create moleucle object for first input file and sum moleucles together if multiple files
+            
+            # Create Molecule or MoleculeThermo object from the input file(s) in each entry of the .conf file
             mols.append(molecules.init_mol_from_log(mol_files[-1][0]))
-            for m_file in mol_files[-1][1:]:
-                extra_mol = molecules.init_mol_from_log(m_file)
-                mols[-1] = sum_molecules(mols[-1], extra_mol)
+            for extra_file in mol_files[-1][1:]:
+                extra_mol = molecules.init_mol_from_log(extra_file)
+                mols[-1] = sum_mols(mols[-1], extra_mol)
 
     return mol_names, mols
 
@@ -232,8 +234,8 @@ def sum_mols(*args):
     for mol in args:
 
         # Combine shared Molecue/MoleculeThermo properties of logfile, atom ids and SCF energy
-        logfiles.append(mol.logfile)
-        atom_list.append(mol.atoms)
+        logfiles.append(mol.file_name)
+        atom_list.append(mol.atom_ids)
         escf_sum += mol.escf
 
         # Check if molecules are optimised
@@ -251,48 +253,25 @@ def sum_mols(*args):
 
     # Instantiate molecule class with summed values
     if thermo == True:
-        new_mol = molecules.MoleculeThermo(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atomList, optimised=optimised, thermo=thermo_sums)
+        new_mol = molecules.MoleculeThermo(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised, thermo=thermo_sums)
     else:
-        new_mol = molecules.Molecule(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atomList, optimised=optimised,)
+        new_mol = molecules.Molecule(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised,)
 
     return new_mol
 
 
-def init_reaction_profile(reac_step_names, reac_steps, paths):
+def construct_reaction_path(system_file, mol_names=None):
 
-    '''Function that creates a reaction profile object for a reaction path
+    '''Function that constructs connected reaction paths for a reaction from a .conf file
 
     Parameters:
-     reac_step_names: list - str identifiers of the unique steps on the reaction profile
-     reac_steps: list - MoleculeThermo objects of the unique steps on the reaction profile
-     paths: list - indexes of the steps making up each reaction path in the profile
+     system_file: str - name of the conf file containing the reaction files, names and connectivities for each step in the reaction
+     mol_names: list of str - [optional; default: None], identifiers for each of the molecules/reaction steps
 
     Returns:
-     reaction_profile: list of :class:objects -  List of ReactionPath objects containing the molecules in the path
-    '''
-
-    # Set initial variables
-    reaction_profile = []
-
-    for reaction_path in paths:
-        reactants_node = reaction_path[0]
-        path_molecules = [reac_steps[reactants_node]]
-        path_names = [reac_step_names[reactants_node]]
-
-        # For each seperate path create a ReactionPath object
-        for path_step in reaction_path[1:]:
-            if path_step == reactants_node:
-                reaction_profile.append(molecules.ReactionPath(path_molecules, path_names))
-                path_molecules = []
-                path_names = []
-            path_molecules.append(reac_steps[path_step])
-            path_names.append(reac_step_names[path_step])
-        reaction_profile.append(molecules.ReactionPath(path_molecules, path_names))
-
-    return reaction_profile
-
-
-def construct_reaction_path(system_file, mol_names=None):
+     path_list: nested list - list of each seperate path in the reaction
+     step_neighbours: ?
+    ''' 
 
     # Read in system file
     with open(system_file) as file:
@@ -306,7 +285,6 @@ def construct_reaction_path(system_file, mol_names=None):
                 mol_names.append(line.split()[0])
 
     # Set neighbour list from system file
-    # Might not need branches, numSteps or even stepNeighbours
     branches = 1
     num_steps = 0
     step_neighbours = []
@@ -329,7 +307,7 @@ def construct_reaction_path(system_file, mol_names=None):
     path_list = []
     reactant_nodes = np.nonzero(np.sum(adjacency, axis=0) == 0)[0]
     for r_node in reactant_nodes:
-        pathList.append(trackReactionPath(r_node, adjacency))
+        pathList.append(track_reaction_path(r_node, adjacency))
 
     return path_list, step_neighbours
 
@@ -343,7 +321,7 @@ def track_reaction_path(current_step, adjacency, path=[]):
     paths = []
     next_path = np.nonzero(adjacency[current_step,:])[0]
     for np in next_path:
-        next_step = trackReactionPath(np, adjacency, path)
+        next_step = track_reaction_path(np, adjacency, path)
         for ns in next_step:
             paths.append(ns)
     return paths
