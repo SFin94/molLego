@@ -265,17 +265,17 @@ def plot_PES(mol_data, parameter_cols, energy_col='Relative E SCF', save=None, c
     return fig, ax
 
 
-def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colour=None, stepWidth=3000, lineBuffer=0.08, label=True):
+def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, colour=None, step_width=3000, line_buffer=0.08, label=True):
 
     '''Function which plots a reaction profile
 
     Parameters:
-     reactionData: pandas DataFrame
+     reaction_data: pandas DataFrame
      energy_col: str - header for relative energy column in dataframe [default: 'Relative E']
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
-     stepWidth: int - the marker size of the scatter hlines used to mark the reaction steps [default: 3000]
-     lineBuffer: float - the buffer from the centre of the hline that the connecting lines will connect from [default: 0.05]
+     step_width: int - the marker size of the scatter hlines used to mark the reaction steps [default: 3000]
+     line_buffer: float - the buffer from the centre of the hline that the connecting lines will connect from [default: 0.05]
      label: bool - if True then plots the indexes with each step, if False then returns the figure without labels
 
     Returns:
@@ -284,32 +284,32 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
     '''
 
     fig, ax = plot_setup()
-    paths = list(reactionData['Reaction path'].unique())
-    labelBuffer = lineBuffer - 0.01
+    paths = list(reaction_data['Reaction path'].unique())
+    label_buffer = line_buffer - 0.01
 
     # Set colours if not provided - the number of paths will be number of colours
 #    colours = sns.cubehelix_palette(len(paths))
     if colour == None:
-        colPallete = sns.color_palette("cubehelix", len(paths))
+        col_pallete = sns.color_palette("cubehelix", len(paths))
         colour = []
-        for pInd in range(len(paths)):
-            colour.append(colPallete[paths.index(pInd)])
+        for p_ind in range(len(paths)):
+            colour.append(col_pallete[paths.index(p_ind)])
 
     # Plot the lines and points for the profile (lineBuffer and stepWidth can be altered to fit the profile)
-    for pInd, path in enumerate(paths):
-        reacPathData = reactionData.loc[reactionData['Reaction path'] == path]
-        ax.scatter(reacPathData['Reaction coordinate'], reacPathData[quantityCol], color=colour[pInd], marker='_', s=stepWidth, lw=5)
-        for rStepInd in range(1, len(reacPathData)):
-            ax.plot([reacPathData['Reaction coordinate'].iloc[rStepInd-1]+lineBuffer, reacPathData['Reaction coordinate'].iloc[rStepInd]-lineBuffer], [reacPathData[quantityCol].iloc[rStepInd-1], reacPathData[quantityCol].iloc[rStepInd]],  color=colour[pInd], linestyle='--')
+    for p_ind, path in enumerate(paths):
+        reac_path_data = reaction_data.loc[reaction_data['Reaction path'] == path]
+        ax.scatter(reac_path_data['Reaction coordinate'], reac_path_data[quantity_col], color=colour[p_ind], marker='_', s=stepWidth, lw=5)
+        for rstep_ind in range(1, len(reac_path_data)):
+            ax.plot([reac_path_data['Reaction coordinate'].iloc[rstep_ind-1]+lineBuffer, reac_path_data['Reaction coordinate'].iloc[rstep_ind]-lineBuffer], [reac_path_data[quantity_col].iloc[rstep_ind-1], reac_path_data[quantity_col].iloc[rstep_ind]],  color=colour[p_ind], linestyle='--')
 
             # Plot labels with dataframe index and energy label unless False, plot reactants at the end
             if label == True:
-                stepLabel = reacPathData.index.values[rStepInd] + ' (' + str(int(reacPathData[quantityCol].iloc[rStepInd])) + ')'
-                ax.text(reacPathData['Reaction coordinate'].iloc[rStepInd]-labelBuffer, reacPathData[quantityCol].iloc[rStepInd]+6, stepLabel, color=colour[pInd], fontsize=11)
+                stepLabel = reac_path_data.index.values[rstep_ind] + ' (' + str(int(reac_path_data[quantity_col].iloc[rstep_ind])) + ')'
+                ax.text(reac_path_data['Reaction coordinate'].iloc[rstep_ind]-label_buffer, reac_path_data[quantity_col].iloc[rstep_ind]+6, stepLabel, color=colour[p_ind], fontsize=11)
 
         if label == True:
-            reactantLabel = reacPathData.index.values[0] + ' (' + str(int(reacPathData[quantityCol].iloc[0])) + ')'
-            ax.text(reacPathData['Reaction coordinate'].iloc[0]-labelBuffer, reacPathData[quantityCol].iloc[0]+6, reactantLabel, color=colour[pInd], fontsize=11)
+            reactant_label = reac_path_data.index.values[0] + ' (' + str(int(reac_path_data[quantity_col].iloc[0])) + ')'
+            ax.text(reac_path_data['Reaction coordinate'].iloc[0]-label_buffer, reac_path_data[quantity_col].iloc[0]+6, reactant_label, color=colour[p_ind], fontsize=11)
 
     # Set x and y labels
     ax.set_xlabel('R$_{x}$', fontsize=13)
@@ -322,10 +322,10 @@ def plotReactionProfile(reactionData, quantityCol='Relative G', save=None, colou
     return fig, ax
 
 
-def normaliseParameters(dataframe, parameters):
+def normalise_parameters(dataframe, parameters):
 
     # Normalise all values to plot on the scales - for distances to [0:1], for angles [0:180], dihedrals [-180:180]
-    paramHeadings = []
+    param_headings = []
     for key, value in parameters.items():
         if len(value) == 2:
             dataframe["Norm " + key] = dataframe[key]/dataframe[key].max()
@@ -335,34 +335,34 @@ def normaliseParameters(dataframe, parameters):
             dataframe["Norm " + key] = (dataframe[key]%360.)/360.
         
         # Set parameter heading
-        paramHeadings.append("Norm " + key)
+        param_headings.append("Norm " + key)
 
-    return paramHeadings
+    return param_headings
 
 
-def setConformerColours(conformerData, energy):
+def set_conformer_colours(conformer_data, energy):
 
     # Calculate normalised energy to plot colour by if given
     if energy != None:
-        conformerData['Norm E'] = conformerData[energy]/conformerData[energy].max()
+        conformer_data['Norm E'] = conformer_data[energy]/conformer_data[energy].max()
         # colmap = sns.cubehelix_palette(start=2.5, rot=.5, dark=0, light=0.5, as_cmap=True)
         colmap = sns.cubehelix_palette(as_cmap=True)
-        for val in conformerData['Norm E']:
-            colour_vals = [colmap(val)[:3] for val in conformerData['Norm E']]    
+        for val in conformer_data['Norm E']:
+            colour_vals = [colmap(val)[:3] for val in conformer_data['Norm E']]    
         return colour_vals
     else:
     # Else set colours different for each conformer 
-        colblock = sns.cubehelix_palette(len(conformerData.index))
+        colblock = sns.cubehelix_palette(len(conformer_data.index))
         return colblock
 
     
-def plotConfRadar(conformerData, geomParameters, save=None, colour=None, energy=None):
+def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, energy=None):
 
     '''Function which plots conformers against several geometric parameters in a radial plot
 
     Parameters:
-     conformerData: pandas DataFrame - conformer data
-     geomParameters: dict - keys:values are column headings to atom indexes defining the parameter
+     conformer_data: pandas DataFrame - conformer data
+     geom_parameters: dict - keys:values are column headings to atom indexes defining the parameter
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
      energy: str - energy column of dataframe to colour by [default: None type]
@@ -372,31 +372,31 @@ def plotConfRadar(conformerData, geomParameters, save=None, colour=None, energy=
 
     '''
 
-    fig, ax = radialPlotSetup()
+    fig, ax = radial_plot_setup()
 
     # Calculate angles to plot, set parameter list
-    numParams = len(geomParameters.keys())
-    plotAngles = [n / float(numParams) * 2 * np.pi for n in range(numParams)]
-    plotAngles += plotAngles[:1]
+    num_params = len(geom_parameters.keys())
+    plot_angles = [n / float(num_params) * 2 * np.pi for n in range(num_params)]
+    plot_angles += plot_angles[:1]
 
     # Normalise conformer parameters
-    paramHeadings = normaliseParameters(conformerData, geomParameters)
-    paramHeadings.append(paramHeadings[0])
+    param_headings = normalise_parameters(conformer_data, geom_parameters)
+    param_headings.append(param_headings[0])
     
     # Set colour
     if colour == None:
-        conformerData['Colour'] = setConformerColours(conformerData, energy)
+        conformer_data['Colour'] = set_conformer_colours(conformer_data, energy)
     else:
-        conformerData['Colour'] = colour
+        conformer_data['Colour'] = colour
 
     # Plot for each conformer
-    for cInd, conf in enumerate(conformerData.index):
-        ax.plot(plotAngles, conformerData.loc[conf][paramHeadings], label=conf, color=conformerData.loc[conf]['Colour'])
-        ax.fill(plotAngles, conformerData.loc[conf][paramHeadings], color=conformerData.loc[conf]['Colour'], alpha=0.1)
+    for conf in conformer_data.index:
+        ax.plot(plot_angles, conformer_data.loc[conf][param_headings], label=conf, color=conformer_data.loc[conf]['Colour'])
+        ax.fill(plot_angles, conformer_data.loc[conf][param_headings], color=conformer_data.loc[conf]['Colour'], alpha=0.1)
 
     # Set plot attributes
-    ax.set_xticks(plotAngles[:-1])
-    ax.set_xticklabels(list(geomParameters.keys()))
+    ax.set_xticks(plot_angles[:-1])
+    ax.set_xticklabels(list(geom_parameters.keys()))
     ax.set_yticks([])
     ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, frameon=False, handletextpad=0.1, fontsize=9)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
@@ -407,13 +407,13 @@ def plotConfRadar(conformerData, geomParameters, save=None, colour=None, energy=
     return fig, ax
 
 
-def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=None):
+def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energy=None):
     
     '''Function which plots conformers against several geometric parameters in a linear plot
 
     Parameters:
-     conformerData: pandas DataFrame - conformer data
-     geomParameters: dict - keys:values are column headings to atom indexes defining the parameter
+     conformer_data: pandas DataFrame - conformer data
+     geom_parameters: dict - keys:values are column headings to atom indexes defining the parameter
      save: str - name of image to save plot too (minus .png extension) [deafult: None type]
      colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
      energy: str - energy column of dataframe to colour by [default: None type]
@@ -424,25 +424,25 @@ def plotConfMap(conformerData, geomParameters, save=None, colour=None, energy=No
     '''
     
     fig, ax = plot_setup()
-    numParams = len(geomParameters.keys())
-    plotParams = list(geomParameters.keys())
+    num_params = len(geom_parameters.keys())
+    plot_params = list(geom_parameters.keys())
 
     # Normalise conformer parameters
-    paramHeadings = normaliseParameters(conformerData, geomParameters)
+    param_headings = normaliseParameters(conformer_data, geom_parameters)
 
     # Set colour
     if colour == None:
-        conformerData['Colour'] = setConformerColours(conformerData, energy)
+        conformer_data['Colour'] = setConformerColours(conformer_data, energy)
     else:
-        conformerData['Colour'] = colour
+        conformer_data['Colour'] = colour
 
     # Plot data
-    for cInd, conf in enumerate(conformerData.index):
-        ax.plot(range(numParams), conformerData.loc[conf][paramHeadings], label=conf, color=conformerData.loc[conf]['Colour'], marker='o', alpha=0.8)
+    for cInd, conf in enumerate(conformer_data.index):
+        ax.plot(range(num_params), conformer_data.loc[conf][param_headings], label=conf, color=conformer_data.loc[conf]['Colour'], marker='o', alpha=0.8)
 
     # Set x and y labels and ticks
-    ax.set_xticks(range(numParams))
-    ax.set_xticklabels(plotParams, rotation=20, ha='right')
+    ax.set_xticks(range(num_params))
+    ax.set_xticklabels(plot_params, rotation=20, ha='right')
     ax.set_ylim(ymin=0.0, ymax=1.0)
 
     ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, frameon=False, handletextpad=0.1, fontsize=9)
