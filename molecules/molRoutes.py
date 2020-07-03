@@ -314,6 +314,16 @@ def construct_reaction_path(system_file, mol_names=None):
 
 def track_reaction_path(current_step, adjacency, path=[]):
 
+    '''Function that constructs a branch of a connected reaction path and used by construct_reaction_path to compile full raction pathways that may overlap
+
+    Parameters:
+     current_step: int - index of the molecule that the current step of the pathway is up to
+     adjacency: np array - connecitivty matrix where entries are 1 for connected points on a reaction path and 0 for unconnected points
+
+    Returns:
+     paths: nested list - lists of all reaction paths by the index of the molecule
+    '''
+
     path = path + [current_step]
     if np.count_nonzero(adjacency[current_step,:]) == 0:
         return path
@@ -328,6 +338,17 @@ def track_reaction_path(current_step, adjacency, path=[]):
 
 
 def reaction_profile_to_dataframe(reaction_profile, save=None, min=None):
+
+    '''Function that creates a reaction profile dataframe and optionally saves it to a csv file
+
+    Parameters:
+     reaction_profile: list of ReactionPath objects - reaction path objects for each reaction pathway
+     save: None/str - [optional, default:None] if provided then the name of the csv to save the dataframe too
+     min: str - [optional, default:None] the identifier of the molecule to calcualte the relative values as a minimum too
+
+    Returns:
+     reaction_profile_data: pd DataFrame - dataframe of the steps in each of the reaction pathways
+    '''
 
     reaction_profile_data = pd.DataFrame()
 
