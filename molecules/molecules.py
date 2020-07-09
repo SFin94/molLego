@@ -75,16 +75,24 @@ class MoleculeThermo(Molecule):
         e: :class:`float` - thermally corrected total energy of the molecule (kJ/mol)
         h: :class:`float` - thermally corrected total enthalpy of the molecule (kJ/mol)
         g: :class:`float` - thermally corrected total Gibbs free energy of the molecule (kJ/mol)
-        s: :class:`numpy.ndarray` - total entropy of the molecule (kJ/mol)
+        s: :class:`float` - total entropy of the molecule (kJ/mol)
         zpe: :class:`float` - zero-point energy of the molecule (kJ/mol)
+
+    Additional Parameters:
+     thermo: list of floats - themochemistry values in the order: ZPE, thermally corrected E, H and G, and TS 
     '''
 
-    def __init__(self, input_file, mol_energy, mol_geom, atom_ids, optimised, thermo):
+    def __init__(self, input_file, mol_energy, mol_geom, atom_ids, optimised, zpe=0.0, e=0.0, h=0.0, g=0.0, s=0.0):
 
         # Set thermodynamic values (energy, enthalpy, Gibbs free energy, entropy, zpe) for molecule
         super().__init__(input_file, mol_energy, mol_geom, atom_ids, optimised)
-        self.e, self.h, self.g, self.s, self.zpe = thermo
 
+        # Set thermodynamic quantities
+        self.zpe = zpe
+        self.e = e
+        self.h = h
+        self.g = g
+        self.s = s
 
 class ReactionPath():
 
@@ -132,7 +140,8 @@ def init_mol_from_log(logfile, opt_steps=[1], parameters=None):
     # Initiate Molecule or MoleculeThermo object for each molecule
     for i, mol in enumerate(mol_results.values()):
         if 'thermo' in list(job.job_property_flags.keys()):
-            molecule = MoleculeThermo(job.file_name, mol['energy'], mol['geom'], job.atom_ids, mol['opt'], mol['thermo'])
+            # Process dict of thermochemistry results to pass ZPE, thermally corrected E, H, G and TS to init
+            molecule = MoleculeThermo(job.file_name, mol['energy'], mol['geom'], job.atom_ids, mol['opt'], zpe=mol['thermo']['ZPE'], e=mol['thermo']['E'], h=mol['thermo']['H'], g=mol['thermo']['G'], s=mol['thermo']['S'])
         else:
             # Check if opt set or not 
             if job.spe == False:
@@ -187,8 +196,6 @@ def init_reaction_profile(reac_step_names, reac_steps, paths):
         reaction_profile.append(ReactionPath(path_molecules, path_names))
 
     return reaction_profile
-
-
 
 
 # def initMolFromDF(data_file, geom=False, optStep=1):

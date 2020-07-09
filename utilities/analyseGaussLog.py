@@ -224,10 +224,11 @@ class GaussianLog():
         # Iterate through file and pulls final section
         with open(self.file_name, 'r') as input:
             for line in input:
-                if final_info_flag in line:
-                    job_details = self._pull_job(input, line)
-                elif modredundant_flag in line.lower():
+                if modredundant_flag in line.lower():
                     modred = True
+                elif final_info_flag in line:
+                    job_details = self._pull_job(input, line)
+                    return job_details, modred
 
         return job_details, modred
 
@@ -323,33 +324,45 @@ class GaussianLog():
          
         Returns:
          list of floats:
-            temp - temperature of 
-            totE - thermally corrected energy (kJ/mol)
-            totH - enthalpy (kJ/mol)
-            totG - free energy (kJ/mol)
-            totS - entropy (kJ/mol)
+            temp - temperature 
             zpe - zero point energy (kJ/mol)
+            totE - thermally corrected energy (kJ/mol)
+            totH - thermally corrected enthalpy (kJ/mol)
+            totG - thermally corrected free energy (kJ/mol)
+            totS - entropy (kJ/mol)
         '''
+
+        # Initialise variables
+        quantities = ['T', 'ZPE', 'E', 'H', 'G', 'S']
+        thermochemistry = {quantity: 0.0 for quantity in quantities}
 
         # Skip to temperature line and set temperature
         for i in range(2):
             line = input.__next__()
-        temp = float(line[15:22])
+        thermochemistry['T'] = float(line[15:22])
 
-        # Skip line until thermochemistry section reached
+        # Skip to ZPE line and set ZPE
         while 'Zero-point correction' not in line:
             line = input.__next__()
-        thermo = [float(line[50:58])]
+        thermochemistry['ZPE'] = float(line[50:58])
 
-        # Skip to thermally corrected e, h, g lines
-        [input.__next__() for x in range(0,3)]
-        for i in range(3):
-            line = input.__next__()
-            thermo.append(float(line[53:].strip()))
-        thermo.append((thermo[2]-thermo[3])/temp)
+        # Optional section if thermal corrections to E, H, G wanted
+        # thermal_corrections = [float(input.__next__()[50:58]) for i in range(3)]
+        # return thermal_corrections
+        
+        # Skip to thermally corrected values and set thermally corrected E, H, G
+        [input.__next__() for x in range(0,4)]
+        for quantity in quantities[2:-1]:
+            thermochemistry[quantity] = float(input.__next__()[53:].strip())
+
+        # Calculate TdS
+        thermochemistry['S'] = (thermochemistry['H'] - thermochemistry['G'])/thermochemistry['T']
 
         # Convert to kJ/mol
-        return [value*2625.5 for value in thermo]
+        for quantity in thermochemistry:
+            thermochemistry[quantity] *= 2625.5
+            
+        return thermochemistry
 
 
     def _update_opt_count(self, property):
@@ -371,7 +384,7 @@ class GaussianLog():
             return False
 
 
-    def pull_properties(self, opt_steps=[1], target_property=None):
+    def pull_properties(self, opt_steps=[1], target_property=None, scale_factor=1.0):
         
         '''Class method to parse the energy, thermodynamic data, geometry and optimised information from specified optimsation step/s in the log file for a molecule.
 
@@ -390,8 +403,13 @@ class GaussianLog():
         
         # Mapping of functions to property
         pull_functions = {'energy': self._pull_energy, 'geom': self._pull_geometry, 'thermo': self._pull_thermo, 'opt': self._pull_optimised}
-        if 'MP2' in self.job_type:
+        if 'MP2' in self.method:
             pull_functions['energy'] = self._pull_mp2_energy
+
+        # Set opt count to 2 if fopt calculation as thermo occurs after opt count met
+        if self.job_type == 'fopt':
+            if opt_steps == [1]:
+                opt_steps = [2]
 
         # Open and iterate through log file
         with open(self.file_name, 'r') as input:
@@ -408,15 +426,8 @@ class GaussianLog():
                     mol_results[opt_count] = step_result
                     step_result = {}
                 
-                    # Check if results calculated for all optimisation steps
-                    if opt_step_ind == len(opt_steps):
-
-                        # Pull thermodynamic information if property (occurs past opt_count update flag)
-                        if 'thermo' in self.job_property_flags.keys():
-                            while self.job_property_flags['thermo'] not in line:
-                                line = input.__next__()
-                            mol_results[opt_count]['thermo'] = pull_functions['thermo'](input, line)
-
+                    # Return if results calculated for all optimisation steps
+                    if opt_step_ind == len(opt_steps):  
                         return mol_results
 
 
