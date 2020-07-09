@@ -162,10 +162,10 @@ def init_scan(*args, tracked_params=None):
             opt_steps = list(range(1, total_scan_steps+1))
         
         # Create molecule object for each scan step in input files
-        if i == 0:
-            scan_molecules = molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
-        else:
-            scan_molecules.append(molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters))
+        # if i == 0:
+        #     scan_molecules = molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
+        # else:
+        scan_molecules += molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
 
     return scan_molecules, scan_info      
 
@@ -353,7 +353,7 @@ def reaction_profile_to_dataframe(reaction_profile, save=None, min=None):
     reaction_profile_data = pd.DataFrame()
 
     # For each reaction path create dataframe then append additional columns
-    for i, reaction_path in enumerate(reactionProfile):
+    for i, reaction_path in enumerate(reaction_profile):
         rpath_data = mols_to_dataframe(reaction_path.reac_steps, reaction_path.reac_step_names, min=min)
         rpath_data['Reaction coordinate'] = reaction_path.reac_coord
         rpath_data['Reaction path'] = [i]*len(reaction_path.reac_step_names)
@@ -366,3 +366,37 @@ def reaction_profile_to_dataframe(reaction_profile, save=None, min=None):
         reaction_profile_data.to_csv(save + '.csv')
 
     return reaction_profile_data
+
+
+def process_input_file(input_file):
+
+    '''Function that processes the input file, if a conf file is given then the molecules are processed, creating Molecule/MoleculeThermo objects for each enetry in the conf file and converting to a DataFrame. If a csv file is given then the molecule DataFrame is parsed directly from the csv file
+    
+    Parameters:
+     input_file: str - file name which should have either a .conf or .csv extension
+
+    Returns:
+     mol_df: pd DataFrame - dataframe with all the molecule information in 
+     [optional returns if .conf file is the input file type]
+     molecules: list of Molecule/MoleculeThermo objects - created Molecule objects for each entry line in the conf file
+
+    '''
+    
+    # Retrieve file type for input file
+    file_type = str(input_file.split('.')[-1])
+
+    # Process conf file, creating Molecule objects and a DataFrame
+    if file_type == 'conf':
+
+        mol_names, mols = construct_mols(input_file)
+        mol_df = mols_to_dataframe(mols, mol_names=mol_names)
+        return mol_df, mols
+
+    # Parse in existing dataframe and set first column (mol_names) as index
+    elif file_type == 'csv':
+        mol_df = pd.read_csv(input_file, index_col=0) 
+        return mol_df, None
+    
+    # Raise exception if file type is not recognised
+    else:
+        raise Exception('File extension not recognised (should be .conf or .csv)')
