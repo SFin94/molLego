@@ -161,10 +161,6 @@ def init_scan(*args, tracked_params=None):
                 total_scan_steps *= (scan_parameter['num_steps'] + 1)
             opt_steps = list(range(1, total_scan_steps+1))
         
-        # Create molecule object for each scan step in input files
-        # if i == 0:
-        #     scan_molecules = molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
-        # else:
         scan_molecules += molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
 
     return scan_molecules, scan_info      

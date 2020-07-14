@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import pandas as pd
 
@@ -23,12 +24,163 @@ class GaussianLog():
 
     def __init__(self, logfile):
 
-        '''Initialises class, runs methods to set attributes about the calculation (molecule an job details) and flags for parsing properties from the file
+        '''Initialises class, runs methods to set attributes about the calculation (molecule and job details) and flags for parsing properties from the file
         '''
 
         self.file_name = logfile
         self.set_job_details()
         self.set_flags()
+
+
+    def _pull_job_start(self, input, current_line):
+
+        '''Class method to parse job details - an alternative to the end method which is preferred (more information available) in the case that the job is not archived and the final block is not printed (E.g. relazed scan with  non-optimized steps)
+
+        Parameters:
+         input: iter object - lines of file
+         current_line: current line in file
+        
+        Returns:
+         output: str - information from the end of the file containing some job details (method, basis set, job type and molecular formula)
+        '''
+
+        # Initialise variables and skip to start line
+        output = ''
+        while '---' not in current_line:
+            current_line = input.__next__()
+        current_line = input.__next__()
+        
+        # Parse job input lines
+        while '---' not in current_line:
+            output += (current_line.strip())
+            current_line = input.__next__()
+
+        return output
+
+
+    def _pull_job_end(self, input, current_line):
+
+        '''Class method to pull final block of information from gaussian log file
+
+        Parameters:
+         input: iter object - lines of file
+         current_line: current line in file
+        
+        Returns:
+         output: str - str - information from the end of the file containing some job details (method, basis set, job type and molecular formula)
+        '''
+
+        # Initialise variables
+        output = ''
+        
+        # Add relevant lines to output string to collect all information wanted
+        while '\\\\' not in current_line:
+            output += (current_line.strip())
+            current_line = input.__next__()
+        output += current_line.split('\\\\')[0]
+
+        return output
+
+    
+    def pull_job_details(self):
+
+        '''Class method that pulls job details from the gaussian log file
+        Sets private class attribute:
+         _modred: :class:`bool` - flag to tell rigid and relaxed scans apart
+
+        Returns:
+         job_details: str - information from the end of the file containing some job details (method, basis set, job type and molecular formula)
+        '''
+        
+        # Set flag for the section to parse
+        pull_info_flags = {'%mem=': self._pull_job_start, '1\\1\\': self._pull_job_end}
+        extra_info_flags = {'modredundant': False, 'scan ': False}
+
+        # Iterate through file and pull job details
+        with open(self.file_name, 'r') as input:
+            for line in input:
+
+                # Set flags for modredundant input or scan information
+                for flag in list(extra_info_flags.keys()):
+                    if flag in line.lower():
+                        extra_info_flags[flag] = True
+
+                # Pull start and end information (if present) from file
+                for flag in list(pull_info_flags.keys()):
+                    if flag in line.lower():
+                        job_details = pull_info_flags[flag](input, line)
+                # if final_info_flag in line:
+                #     job_details = self._pull_job(input, line)
+                #     return job_details, modred
+
+        return job_details, extra_info_flags
+
+
+    def _process_job_start(self, raw_output, extra_output):
+
+        '''Class method that prcoesses start job output line to set several attributes for the log file. Less information is set and is a back up method for processing the end job information
+        
+        Parameters:
+         raw_output: str - raw string output of input job spec in gaussian log file output
+        
+        Sets class attributes:
+         job_type: :class:`str` - calculation type (Opt, Fopt, Freq, SP, Scan)
+         sp: :class:`bool` - flag of whether the calculation is an optimisation or single point energy calculation
+        '''
+
+        # Uses calculation flags to try to deduce what job type the calculation is
+        calculation_flags = {'opt': False, 'freq': False, 'scan': False, 'mp2': False}
+        job_calculation_types = {'opt': [True, False, False], 'fopt': [True, True, False], 'freq': [False, True, False], 'scan_rigid': [False, False, True]}
+
+        # Set calculation flag to True if present in job input
+        for flag in list(calculation_flags.keys()):
+            if flag in raw_output.lower():
+                calculation_flags[flag] = True
+        
+        # Set job type based on calculation bool results
+        for job, calc_type in job_calculation_types.items():
+            if calc_type == list(calculation_flags.values())[:-1]:
+                self.job_type = job
+                break
+
+        # If both scan and modredundant flags are true then job is a relaxed scan
+        if all(list(extra_output.values())):
+            self.job_type = 'scan_relaxed'
+
+        # Set MP2 as method if present for correct energy parsing
+        if calculation_flags['mp2'] == True:
+            self.method = 'mp2'
+
+        # Set number of atoms and atom ids
+        self.pull_atom_number()
+        self.pull_atom_ids()
+
+
+    def _process_job_end(self, raw_output, extra_output):
+
+        '''Class method that prcoesses end job output line to set several attributes for the log file
+        
+        Parameters:
+         raw_output: str - raw string output of final gaussian log file output containing job information
+        
+        Sets class attributes:
+         method: :class:`str` - functional/method of calculation
+         basis_set: :class:`str` - basis set input of calculation
+         job_type: :class:`str` - calculation type (Opt, Fopt, Freq, SP, Scan)
+         sp: :class:`bool` - flag of whether the calculation is an optimisation or single point energy calculation
+        '''
+
+        raw_output = raw_output.split('\\')
+        self.job_type = raw_output[3].lower()
+        self.method, self.basis_set  = raw_output[4:6]
+        self.set_molecule(raw_output[6])
+        
+        # Set different job types for rigid and relaxed scans
+        if self.job_type.lower() == 'scan':
+            if extra_output['modredundant'] == True:
+                self.job_type = 'scan_relaxed'
+            else:
+                self.job_type = 'scan_rigid'
 
 
     def set_job_details(self):
@@ -38,30 +190,28 @@ class GaussianLog():
          method: :class:`str` - functional/method of calculation
          basis_set: :class:`str` - basis set input of calculation
          job_type: :class:`str` - calculation type (Opt, Fopt, Freq, SP, Scan)
-         sp: :class:`bool` - flag of whether the calculation is an optimisation or single point energy calculation
+         spe: :class:`bool` - flag of whether the calculation is an optimisation or single point energy calculation
 
         Also runs set_molecule which sets the charge, numer of atoms, elements and atom ids 
         '''
 
         # Parse job and molecule information from log file
-        raw_output, modred = self.pull_job_details()
+        raw_output, extra_output = self.pull_job_details()
         
-        # Process raw_output and set job attributes
-        raw_output = raw_output.split('\\')
-        self.job_type = raw_output[3].lower()
-        self.method, self.basis_set  = raw_output[4:6]
-        self.set_molecule(raw_output[6])
+        # Test if raw output is from end information from successful job for processing
+        if '1\\1\\' in raw_output:
+            self._process_job_end(raw_output, extra_output)
 
-        # Set spe flag if single point and no optimisation steps
-        self.spe = (self.job_type.lower() == 'sp')
+        # Otherwise try processing less information from job input at the start of the file
+        else:
+            try:
+                self._process_job_start(raw_output, extra_output)
+                print('Normal termination output not present, fewer attributes set on input information')
+            except:
+                print('Cannot parse job information from log file')
         
-        # Set different job types for rigid and relaxed scans
-        if self.job_type.lower() == 'scan':
-            if modred == True:
-                self.job_type = 'scan_relaxed'
-            else:
-                self.job_type = 'scan_rigid'
-                self.spe = True
+        # Set spe flag if single point and no optimisation steps
+        self.spe = any([(self.job_type.lower() == 'sp'), (self.job_type.lower() == 'scan_rigid')])
 
 
     def set_flags(self):
@@ -87,9 +237,10 @@ class GaussianLog():
         except:
             print('Job type is not recognised')
 
-        # Switch energy flag if method is MP2
-        if 'MP2' in self.method:
-            self.job_property_flags['energy'] = 'EUMP2'
+        # Switch energy flag if method is MP2 - extra handle in case method was not parsed
+        if (hasattr(self, 'method')):
+            if ('mp2' in self.method.lower()):
+                self.job_property_flags['energy'] = 'EUMP2'
 
 
     def _set_charge(self, mol_formula):
@@ -154,19 +305,19 @@ class GaussianLog():
             self._set_character(mol_formula[-1])
 
         # Set atom ids - relies on self.atom_number already being set
-        self.atom_ids = self.pull_atom_ids()
+        self.pull_atom_ids()
 
 
     def pull_atom_ids(self):
 
         '''Class method to pull atom IDs from start of gaussian log file
 
-        Returns:
-         atom_ids: list of str - atom IDs of the molecule
+        Sets class attributes:
+         atom_ids: :class:`list of str` - atom IDs of the molecule
         '''
 
         # Initialise variables
-        atom_ids = []
+        self.atom_ids = []
         atom_id_flag = 'Charge = '
         jump_line_flags = ['No Z-Matrix', 'Redundant internal coordinates']
 
@@ -180,57 +331,9 @@ class GaussianLog():
                     if any(flag in line for flag in jump_line_flags):
                         line = input.__next__()
                     for atom in range(self.atom_number):
-                        atom_ids.append(line.split()[0][0])
+                        self.atom_ids.append(line.split()[0][0])
                         line = input.__next__()
     
-                    return atom_ids
-
-
-    def _pull_job(self, input, current_line):
-
-        '''Class method to pull final block of information from gaussian log file
-        
-        Returns:
-         output: str - str - information from the end of the file containing some job details (method, basis set, job type and molecular formula)
-        '''
-
-        # Initialise variables
-        output = ''
-        
-        # Add relevant lines to output string to collect all information wanted
-        while '\\\\' not in current_line:
-            output += (current_line.strip())
-            current_line = input.__next__()
-        output += current_line.split('\\\\')[0]
-
-        return output
-
-
-    def pull_job_details(self):
-
-        '''Class method that pulls job details from the gaussian log file
-        Sets private class attribute:
-         _modred: :class:`bool` - flag to tell rigid and relaxed scans apart
-
-        Returns:
-         job_details: str - information from the end of the file containing some job details (method, basis set, job type and molecular formula)
-        '''
-        
-        # Set flag for the section to parse
-        final_info_flag = '1\\1\\'
-        modredundant_flag = 'modredundant'
-        modred = False
-
-        # Iterate through file and pulls final section
-        with open(self.file_name, 'r') as input:
-            for line in input:
-                if modredundant_flag in line.lower():
-                    modred = True
-                elif final_info_flag in line:
-                    job_details = self._pull_job(input, line)
-                    return job_details, modred
-
-        return job_details, modred
 
 
     def _pull_geometry(self, input, current_line):
@@ -403,7 +506,7 @@ class GaussianLog():
         
         # Mapping of functions to property
         pull_functions = {'energy': self._pull_energy, 'geom': self._pull_geometry, 'thermo': self._pull_thermo, 'opt': self._pull_optimised}
-        if 'MP2' in self.method:
+        if self.job_property_flags['energy'] == 'EUMP2':
             pull_functions['energy'] = self._pull_mp2_energy
 
         # Set opt count to 2 if fopt calculation as thermo occurs after opt count met
@@ -482,7 +585,7 @@ class GaussianLog():
         s_index = scan_input.index('S')
         for i in scan_input[1:s_index]:
             scan_info['atom_inds'].append(int(i) - 1)
-            scan_info['param_key'] += (self.atom_ids[int(i)] + i + '-')
+            scan_info['param_key'] += (self.atom_ids[int(i)-1] + i + '-')
         scan_info['param_key'] = scan_info['param_key'][:-1]
 
         return scan_info
@@ -627,6 +730,19 @@ class GaussianLog():
 
         return rigid_scan_info
 
+
+    def pull_atom_number(self):
+
+        '''Class method to pull the number of atoms - back up method as should be set when setting job details for a successful job
+
+        Class attributes set:
+         atom_number: :class:`int` - number of atoms in molecule
+        '''
+
+        with open(self.file_name, 'r') as input:
+            for line in input:
+                if 'natoms' in line.lower():
+                    self.atom_number = int(line.split()[1])
 
 
 
