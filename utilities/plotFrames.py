@@ -117,10 +117,10 @@ def plot_mols_E(mol_data, energy_col='Relative E', save=None, colour=None, label
     return fig, ax
 
 
-def plot_mols_all(mol_data, save=None, labels=None):
+def plot_mols_all(mol_data, save=None, labels=None, enthalpy=False):
 
     '''
-    Function which plots molecules against relative E and G
+    Function which plots molecules against relative E and G (and H)
 
     Parameters:
      mol_data: pandas DataFrame - Containing conformer names/keys and energies
@@ -141,6 +141,11 @@ def plot_mols_all(mol_data, save=None, labels=None):
     # Plot products vs. energy
     ax.scatter(mol_data.index, mol_data['Relative E'], color=e_colour, s=70, label='$\Delta$E')
     ax.scatter(mol_data.index, mol_data['Relative G'], color=g_colour, s=70, label='$\Delta$G')
+
+    # Plot enthalpy (H) too if flag is True
+    if enthalpy == True:
+        h_colour = '#175443'
+        ax.scatter(mol_data.index, mol_data['Relative H'], color=h_colour, s=70, label='$\Delta$H')
 
     # Set labels and axis settings
     if labels == None:

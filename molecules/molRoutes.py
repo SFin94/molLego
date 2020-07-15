@@ -96,7 +96,7 @@ def parse_tracked_params(system_file):
     '''Function which parses any additional parameters to be tracked from an input file
 
         Input:
-         system_file: str - name of input .txt file which contains any additional parameters to be tracked across the scan
+         system_file: str - name of input .txt file which contains any additional parameters to be tracked across the scan [indexes are expected to be the gaussian indexes]
 
          Format of input file:
              param_name (atom_types) atom1_ind atom2_ind [atom3_ind atom4_ind]

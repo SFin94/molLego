@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(usage=usage)
 
     parser.add_argument("input_files", nargs='*', type=str, help="The resulting .log files with the scan in")
-    parser.add_argument("-p", "--params", dest="scan_params", type=list, help="Scan parameters (matches dataframe column header if being parsed from csv)")
+    parser.add_argument("-p", "--params", dest="scan_params", nargs='*', help="Scan parameters (matches dataframe column header if being parsed from csv)")
     parser.add_argument("-t", "--tparam", dest="track_param_file", type=str, default=None, help="Name of text file containing any additional tracked parameter")
     parser.add_argument("--plot", dest="plot", type=int, default=1, help="The dimensionality of the surface to be plotted, 0: no plot; 1: 1D PE profile; 2: 2D PES")
     parser.add_argument("-s", "--save", dest="save", type=str, help="Name of file to save plot too (minus .png extension")
@@ -42,8 +42,8 @@ if __name__ == '__main__':
     # Parse in csv file of scan results
     if input_files[0].split('.')[-1] == 'csv':
         scan_results = pd.read_csv(args.input_files[0], index_col=0)
-        if args.scan_param != None:
-            scan_parameter = args.scan_param
+        if args.scan_params != None:
+            scan_parameter = args.scan_params
         else:
             raise Exception("No scan parameter given, provide the header for the scan parameter column from csv as: -p [header]")
 
