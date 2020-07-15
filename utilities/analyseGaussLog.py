@@ -510,7 +510,7 @@ class GaussianLog():
             pull_functions['energy'] = self._pull_mp2_energy
 
         # Set opt count to 2 if fopt calculation as thermo occurs after opt count met
-        if self.job_type == 'fopt':
+        if any([self.job_type == 'fopt', self.job_type == 'freq']):
             if opt_steps == [1]:
                 opt_steps = [2]
 
