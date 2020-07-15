@@ -1,4 +1,6 @@
+import sys
 import numpy as np
+
 import molLego.utilities.analyseGaussLog as glog
 import molLego.utilities.geom as geom
 

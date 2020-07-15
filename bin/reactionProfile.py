@@ -21,11 +21,11 @@ if __name__ == '__main__':
             C   c.log
     '''
 
-    usage = "usage: %(prog)s [inputFile(s)] [args]"
+    usage = "usage: %(prog)s [input_file(s)] [args]"
     parser = argparse.ArgumentParser(usage=usage)
 
     # Currently one input file only
-    parser.add_argument("input", type=str, help="The .conf file with the reaction system and log files in or a .csv file of reaction data")
+    parser.add_argument("input_file", type=str, help="The .conf file with the reaction system and log files in or a .csv file of reaction data")
     parser.add_argument("-s", "--save", dest="save", type=str, default='', help="Name of csv file and plot to save, appended to _rsteps.csv, _rprofile.csv and _rprofile.png")
     parser.add_argument("-t", "--tparams", dest="track_param_file", type=str, default=None, help="Name of text file containing any additional tracked parameter")
     parser.add_argument("-c", "--colour", dest="plot_colour", nargs='*', default=None, help="List of colour RGB codes (starting with '#' for plotting the reaction profile in")
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     else:
 
         # Reads in reaction conf file and creates a molecule object for each reaction step
-        reac_step_names, reac_steps = ml.construct_mols(input_file, type='thermal')
+        reac_step_names, reac_steps = ml.construct_mols(input_file)
         if args.track_param_file != None:
             parameters = ml.parse_tracked_params(args.track_param_file)
             for step in reac_steps:
@@ -58,7 +58,7 @@ if __name__ == '__main__':
         reaction_profile = ml.init_reaction_profile(reac_step_names, reac_steps, reaction_paths)
 
         # Create reaction profile data frame
-        reaction_profile_data = ml.reac_profile_to_dataframe(reaction_profile, save=args.save + '_rprofile', min=args.min)
+        reaction_profile_data = ml.reaction_profile_to_dataframe(reaction_profile, save=args.save + '_rprofile', min=args.min)
 
     # Plot reaction profile
     fig, ax = ml.plot_reaction_profile(reaction_profile_data, save=args.save, colour=args.plot_colour)

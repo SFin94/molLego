@@ -223,7 +223,7 @@ def sum_mols(*args):
     # Check if Molecue/MoleculeThermo object for summing thermo properties or not
     if hasattr(args[0], 'e'):
         thermo = True
-        # Thermo sums in order of e, h, g, s, zpe
+        # Thermo sums in order of e, h, g, s, zpe - should proabbly make as dict for consistency with other methods
         thermo_sums = [0.0, 0.0, 0.0, 0.0, 0.0]
     
     # Add values for each molecule to quantity sums
@@ -247,9 +247,9 @@ def sum_mols(*args):
             except AttributeError:
                 print('Molecule does not have correct thermodynamic values to be summed')
 
-    # Instantiate molecule class with summed values
+    # Instantiate molecule class with summed values - not sure if summing ZPE is physical
     if thermo == True:
-        new_mol = molecules.MoleculeThermo(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised, thermo=thermo_sums)
+        new_mol = molecules.MoleculeThermo(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised, e=thermo_sums[0], h=thermo_sums[1], g=thermo_sums[2], s=thermo_sums[3])
     else:
         new_mol = molecules.Molecule(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised,)
 
@@ -266,7 +266,6 @@ def construct_reaction_path(system_file, mol_names=None):
 
     Returns:
      path_list: nested list - list of each seperate path in the reaction
-     step_neighbours: ?
     ''' 
 
     # Read in system file
@@ -295,7 +294,7 @@ def construct_reaction_path(system_file, mol_names=None):
 
     # Set adjacency matrix
     adjacency = np.zeros((num_steps, num_steps))
-    for node, edgeSet in enumerate(step_neighbours):
+    for node, edge_set in enumerate(step_neighbours):
         for edge in edge_set:
             adjacency[node, mol_names.index(edge)] = 1
 
@@ -303,12 +302,12 @@ def construct_reaction_path(system_file, mol_names=None):
     path_list = []
     reactant_nodes = np.nonzero(np.sum(adjacency, axis=0) == 0)[0]
     for r_node in reactant_nodes:
-        pathList.append(track_reaction_path(r_node, adjacency))
+        path_list.append(track_reaction_path(r_node, adjacency))
 
-    return path_list, step_neighbours
+    return path_list
 
 
-def track_reaction_path(current_step, adjacency, path=[]):
+def track_reaction_path(current_step, adjacency, current_path=[]):
 
     '''Function that constructs a branch of a connected reaction path and used by construct_reaction_path to compile full raction pathways that may overlap
 
@@ -320,16 +319,16 @@ def track_reaction_path(current_step, adjacency, path=[]):
      paths: nested list - lists of all reaction paths by the index of the molecule
     '''
 
-    path = path + [current_step]
+    current_path = current_path + [current_step]
     if np.count_nonzero(adjacency[current_step,:]) == 0:
-        return path
+        return current_path
 
     paths = []
     next_path = np.nonzero(adjacency[current_step,:])[0]
-    for np in next_path:
-        next_step = track_reaction_path(np, adjacency, path)
-        for ns in next_step:
-            paths.append(ns)
+    for path in next_path:
+        next_step = track_reaction_path(path, adjacency, current_path)
+        for step in next_step:
+            paths.append(step)
     return paths
 
 
