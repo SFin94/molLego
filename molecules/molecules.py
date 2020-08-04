@@ -163,6 +163,55 @@ def init_mol_from_log(logfile, opt_steps=[1], parameters=None):
     return molecules
 
 
+def init_mol_from_xyz(xyzfile, parameters=None):
+
+    '''Function that initiates a Molecule object from an xyz file
+
+    Parameters:
+     xyzfile: str - name of the gaussian log file
+     parameters: dict - parameter key (atoms): parameter atom indexes; by default should be pythonic index
+
+    Returns:
+     molecule: list of :class:objects for a molecule 
+    '''
+
+    # Intitialise variables
+    molecule = []
+
+    # Open and iterate through log file
+    with open(xyzfile, 'r') as input:
+        atom_number = int(input.readline())
+        for line in input:
+
+            # If multiple molecules then process next one with new atom number
+            if len(molecule) >= 1:
+                atom_number = int(line.split()[0])
+                line = input.__next__()
+
+            # Process energy if comment is number or set as title
+            try:
+                energy = float(line.split()[0])
+            except:
+                energy = 0.0
+
+            # Intialise variables
+            atom_ids = []
+            atom_coords = []
+            
+            # Pull geometry and atom ids
+            for i in range(atom_number):
+                line = input.__next__()
+                atom_ids.append(line.split()[0])
+                xyz = np.asarray([float(i) for i in line.split()[1:]])
+                atom_coords.append(xyz)
+            geometry = np.asarray(atom_coords)
+
+            # Initialise molecule
+            molecule.append(Molecule(xyzfile, mol_energy=energy, mol_geom=geometry, atom_ids=atom_ids))
+
+    return molecule
+
+
 def init_reaction_profile(reac_step_names, reac_steps, paths):
 
     '''Function that initiates a ReactionProfile object for a reaction path
