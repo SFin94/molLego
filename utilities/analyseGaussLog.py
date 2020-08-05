@@ -345,11 +345,11 @@ class GaussianLog():
          current_line: current line in file
 
         Returns:
-         atomCoords: numpy array - xyz coordinates for each atom
+         atom_coords: numpy array - xyz coordinates for each atom
         '''
         
         # Initalise variables
-        atomCoords = []
+        atom_coords = []
         # Skip the header section of the standard orientation block
         [input.__next__() for x in range(0,4)]
         # Parse the atomic coordinates
@@ -359,9 +359,9 @@ class GaussianLog():
                 float(line.split()[jind+3])
                 for jind in range(3)
             ])
-            atomCoords.append(xyz)
+            atom_coords.append(xyz)
 
-        return np.asarray(atomCoords)
+        return np.asarray(atom_coords)
 
 
     def _pull_energy(self, input, current_line):
