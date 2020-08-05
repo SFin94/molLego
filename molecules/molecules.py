@@ -53,6 +53,20 @@ class Molecule():
         else:
             self.parameters = dict(zip(param_keys, param_values))
 
+    def set_adjacency(self):
+
+        '''Class method to set adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
+        Sets class attributes:
+         adjacency: :class:`numpy array` - dim: num. of atoms x num. of atoms; entries are 1 for an edge (bond)
+        '''
+
+        self.adjacency = np.zeros((len(self.geom), len(self.geom)))
+
+        for i, atom_i in enumerate(self.geom):
+            for j, atom_j in enumerate(self.geom[i+1:]):
+                self.adjacency[i, j+i+1] =  (geom.calc_dist(atom_i, atom_j) < 2.00)
+        self.adjacency += self.adjacency.transpose()
+
 
     def reindex_molecule(self, reindex):
 
