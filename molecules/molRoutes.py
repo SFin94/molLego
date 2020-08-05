@@ -332,7 +332,7 @@ def track_reaction_path(current_step, adjacency, current_path=[]):
     return paths
 
 
-def reaction_profile_to_dataframe(reaction_profile, save=None, min=None):
+def reaction_profile_to_dataframe(reaction_profile, save=None, path_min=None):
 
     '''Function that creates a reaction profile dataframe and optionally saves it to a csv file
 
@@ -347,9 +347,17 @@ def reaction_profile_to_dataframe(reaction_profile, save=None, min=None):
 
     reaction_profile_data = pd.DataFrame()
 
+    # Process path minimum input to allow for a minimun for each reaction path to be specified
+    if path_min == None:
+        path_min = [None]*len(reaction_profile)
+    else:
+        if type(path_min) != list:
+            path_min = [path_min]*len(reaction_profile)
+    ## want to add ability to give just a couple of arguments and be able to construct the list with None for others?
+
     # For each reaction path create dataframe then append additional columns
     for i, reaction_path in enumerate(reaction_profile):
-        rpath_data = mols_to_dataframe(reaction_path.reac_steps, reaction_path.reac_step_names, min=min)
+        rpath_data = mols_to_dataframe(reaction_path.reac_steps, reaction_path.reac_step_names, min=path_min[i])
         rpath_data['Reaction coordinate'] = reaction_path.reac_coord
         rpath_data['Reaction path'] = [i]*len(reaction_path.reac_step_names)
 
@@ -390,7 +398,7 @@ def process_input_file(input_file):
     # Parse in existing dataframe and set first column (mol_names) as index
     elif file_type == 'csv':
         mol_df = pd.read_csv(input_file, index_col=0) 
-        return mol_df, None
+        return mol_df
     
     # Raise exception if file type is not recognised
     else:
