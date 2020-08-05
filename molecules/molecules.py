@@ -53,6 +53,7 @@ class Molecule():
         else:
             self.parameters = dict(zip(param_keys, param_values))
 
+
     def set_adjacency(self):
 
         '''Class method to set adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
@@ -66,6 +67,21 @@ class Molecule():
             for j, atom_j in enumerate(self.geom[i+1:]):
                 self.adjacency[i, j+i+1] =  (geom.calc_dist(atom_i, atom_j) < 2.00)
         self.adjacency += self.adjacency.transpose()
+
+
+    def set_atom_indexes(self):
+
+        '''Class method to convert list of atom ids to list of corresponding atom indexes
+
+        Sets class attributes:
+         atom_indexes: :calss:`list` - atom ids as str entry
+
+        '''
+
+        # List of atoms - index matches ar
+        atom_id_index = ['h',  'he', 'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne', 'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar', 'k',  'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr', 'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag', 'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe', 'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w',  're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn', 'fr', 'ra', 'ac', 'th', 'pa', 'u', 'np', 'pu']
+
+        self.atom_indexes = [int(atom_id_index.index(i.lower()))+1 for i in self.atom_ids]
 
 
     def reindex_molecule(self, reindex):
