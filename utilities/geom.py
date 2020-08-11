@@ -10,11 +10,11 @@ def calc_param(param_set, geometry):
     '''Function which calculates the bond, valence angle or dihedral of the inputted parameters - can take multiple parameters
 
     Parameters:
-     param_set: Nested list of Ints - the sets of parameters to calculate the geometry for
-     geometry: Numpy array (dim: numAtoms, 3) (float) - Results array of x, y, z coordinates for each atom (might work as list)
+     param_set: nested list of ints - the sets of parameters to calculate the geometry for
+     geometry: np array (dim: numAtoms, 3) (float) - Results array of x, y, z coordinates for each atom (might work as list)
 
     Returns:
-     param_val: List of floats - the calculated parameters for each one in the inputted param_set
+     param_val: list of floats - the calculated parameters for each one in the inputted param_set
     '''
 
     param_val = []

@@ -47,6 +47,7 @@ class Molecule():
             for param in param_keys:
                 parameters[param] = [i-1 for i in parameters[param]]
 
+        # Calculates parameter value from molecule geometry and updates parameter dict
         param_values = geom.calc_param(list(parameters.values()), self.geom)
         if 'parameters' in self.__dict__:
             self.parameters.update(dict(zip(param_keys, param_values)))
@@ -54,18 +55,20 @@ class Molecule():
             self.parameters = dict(zip(param_keys, param_values))
 
 
-    def set_adjacency(self):
+    def set_adjacency(self, distance=2.0):
 
-        '''Class method to set adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
+        '''Sets adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
         Sets class attributes:
          adjacency: :class:`numpy array` - dim: num. of atoms x num. of atoms; entries are 1 for an edge (bond)
         '''
 
+        # Initialise variables
         self.adjacency = np.zeros((len(self.geom), len(self.geom)))
 
+        # Calculates distance between atoms and if smaller than the distance tolerence a bond is assumed (matrix entry set to 1)
         for i, atom_i in enumerate(self.geom):
             for j, atom_j in enumerate(self.geom[i+1:]):
-                self.adjacency[i, j+i+1] =  (geom.calc_dist(atom_i, atom_j) < 2.00)
+                self.adjacency[i, j+i+1] =  (geom.calc_dist(atom_i, atom_j) < distance)
         self.adjacency += self.adjacency.transpose()
 
 
@@ -74,11 +77,11 @@ class Molecule():
         '''Class method to convert list of atom ids to list of corresponding atom indexes
 
         Sets class attributes:
-         atom_indexes: :calss:`list` - atom ids as str entry
+         atom_indexes: :class:`list` - atom ids as str entry
 
         '''
 
-        # List of atoms - index matches ar
+        # List of atoms - index matches atomic mass - 1
         atom_id_index = ['h',  'he', 'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne', 'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar', 'k',  'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr', 'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag', 'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe', 'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w',  're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn', 'fr', 'ra', 'ac', 'th', 'pa', 'u', 'np', 'pu']
 
         self.atom_indexes = [int(atom_id_index.index(i.lower()))+1 for i in self.atom_ids]
