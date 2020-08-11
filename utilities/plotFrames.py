@@ -2,18 +2,19 @@ import sys
 import os
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.axes as axes
 import matplotlib.lines as mlin
+
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.interpolate import griddata
-import seaborn as sns
 
 
 '''Script with some general plotting functions'''
 
-def plot_setup(figsizeX=7, figsizeY=6, fig=None, ax=None):
+def plot_setup(figsizeX=8, figsizeY=6, fig=None, ax=None):
 
     '''
     Function that sets some general settings for all plots
@@ -31,8 +32,8 @@ def plot_setup(figsizeX=7, figsizeY=6, fig=None, ax=None):
     # Set font parameters and colours
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.sans-serif'] = 'Arial'
-    colour_grey = '#3E3E3E'
-    plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey}) 
+    # colour_grey = '#3E3E3E'
+    # plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey}) 
 
     # Set figure and plot param(s) vs energy
     if fig == None and ax == None:
@@ -79,7 +80,7 @@ def radial_plot_setup(figsizeX=6, figsizeY=6, fig=None, ax=None):
     return fig, ax
 
 
-def plot_mols_E(mol_data, energy_col='Relative E', save=None, colour=None, labels=None):
+def plot_mols_E(mol_data, energy_col=['Relative E'], save=None, colour=None, conf_labels=None, line=False):
 
     '''
     Function which plots molecules/conformers against the relative energy
@@ -95,21 +96,28 @@ def plot_mols_E(mol_data, energy_col='Relative E', save=None, colour=None, label
 
     '''
 
-    fig, ax = plot_setup()
+    fig, ax = plot_setup(figsizeX=8, figsizeY=7)
 
+    # Plot conformer vs. relative energy
+    if type(energy_col) != list:
+        energy_col = [energy_col]
     if colour == None:
-        colour = sns.cubehelix_palette(8, start=.5, rot=-.4, dark=0, light=0.5)
+        colour = sns.cubehelix_palette(len(energy_col), start=.5, rot=-.4, dark=0, light=0.5)
 
-    # Plot conformer vx. relative energy
-    ax.scatter(list(mol_data.index), mol_data[energy_col], marker='o', alpha=0.8, color=colour[5], s=70)
+    # Plot conformers for each quantity
+    for col_ind, col in enumerate(energy_col):
+        ax.scatter(list(mol_data.index), mol_data[col], marker='o', alpha=0.8, color=colour[col_ind], label=col, s=70)
+        if line == True:
+            ax.plot(list(mol_data.index), mol_data[col], alpha=0.3, color=colour[col_ind], ls='--')
 
-    if labels == None:
-        labels = mol_data.index
+    if conf_labels == None:
+        conf_labels = mol_data.index
 
     # Set x and y labels and ticks
-    ax.set_xticklabels(labels, rotation=45)
-    ax.set_ylabel('Relative Energy (kJmol$^{-1}$)')
-    ax.set_xlabel('Molecule')
+    ax.set_xticklabels(conf_labels, rotation=45)
+    ax.set_ylabel('Relative Energy (kJmol$^{-1}$)', fontsize=13)
+    ax.set_xlabel('Molecule', fontsize=13)
+    plt.legend(fontsize=13)
 
     if save != None:
         plt.savefig(save + '.png', dpi=600)
@@ -235,7 +243,7 @@ def plot_PES(mol_data, parameter_cols, energy_col='Relative E SCF', save=None, c
 
      '''
 
-    fig, ax = plot_setup()
+    fig, ax = plot_setup(figsizeX=7.5, figsizeY=6)
 
     # Filter out any unoptimised points if optimised present
     opt_col = ('Optimised' in mol_data.columns.values)
@@ -309,8 +317,8 @@ def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, c
 
             # Plot labels with dataframe index and energy label unless False, plot reactants at the end
             if label == True:
-                stepLabel = reac_path_data.index.values[rstep_ind] + ' (' + str(int(reac_path_data[quantity_col].iloc[rstep_ind])) + ')'
-                ax.text(reac_path_data['Reaction coordinate'].iloc[rstep_ind]-label_buffer, reac_path_data[quantity_col].iloc[rstep_ind]+6, stepLabel, color=colour[p_ind], fontsize=11)
+                step_label = reac_path_data.index.values[rstep_ind] + ' (' + str(int(reac_path_data[quantity_col].iloc[rstep_ind])) + ')'
+                ax.text(reac_path_data['Reaction coordinate'].iloc[rstep_ind]-label_buffer, reac_path_data[quantity_col].iloc[rstep_ind]+6, step_label, color=colour[p_ind], fontsize=11)
 
         if label == True:
             reactant_label = reac_path_data.index.values[0] + ' (' + str(int(reac_path_data[quantity_col].iloc[0])) + ')'
