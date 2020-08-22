@@ -93,8 +93,10 @@ class GaussianLog():
         '''
         
         # Set flag for the section to parse
-        pull_info_flags = {'%mem=': self._pull_job_start, '1\\1\\': self._pull_job_end}
+        end_info_flag = '1\\1\\'
+        pull_info_flags = {'%mem=': self._pull_job_start, end_info_flag: self._pull_job_end}
         extra_info_flags = {'modredundant': False, 'scan ': False}
+        composite_job = False
 
         # Iterate through file and pull job details
         with open(self.file_name, 'r') as input:
@@ -109,9 +111,10 @@ class GaussianLog():
                 for flag in list(pull_info_flags.keys()):
                     if flag in line.lower():
                         job_details = pull_info_flags[flag](input, line)
-                # if final_info_flag in line:
-                #     job_details = self._pull_job(input, line)
-                #     return job_details, modred
+
+                        # Return if end of job information - first instance for composite jobs
+                        if flag == end_info_flag:
+                            return job_details, extra_info_flags
 
         return job_details, extra_info_flags
 
@@ -333,7 +336,7 @@ class GaussianLog():
                     for atom in range(self.atom_number):
                         self.atom_ids.append(line.split()[0][0])
                         line = input.__next__()
-    
+                    break
 
 
     def _pull_geometry(self, input, current_line):
@@ -356,8 +359,8 @@ class GaussianLog():
         for atom in range(self.atom_number):
             line = input.__next__()
             xyz = np.asarray([
-                float(line.split()[jind+3])
-                for jind in range(3)
+                float(line.split()[i+3])
+                for i in range(3)
             ])
             atom_coords.append(xyz)
 
@@ -470,7 +473,7 @@ class GaussianLog():
 
     def _update_opt_count(self, property):
 
-        '''Class method to update the count of the current geometry number in the log file, updates differently whether calcualtion is an optimisation (updates once count for each optimised geometry) or if calculation is a single point (rigid scan) (updates for each new geometry)
+        '''Class method to update the count of the current geometry number in the log file, updates differently whether calculation is an optimisation (updates once count for each optimised geometry) or if calculation is a single point (rigid scan) (updates for each new geometry)
 
         Parameters:
          property: str - the current property being parsed from the log file
@@ -510,9 +513,10 @@ class GaussianLog():
             pull_functions['energy'] = self._pull_mp2_energy
 
         # Set opt count to 2 if fopt calculation as thermo occurs after opt count met
-        if any([self.job_type == 'fopt', self.job_type == 'freq']):
-            if opt_steps == [1]:
-                opt_steps = [2]
+        if self.job_type == 'fopt' and opt_steps == [1]: #), self.job_type == 'freq']):
+            # if opt_steps == [1]:
+            opt_steps = [2]
+            print(opt_steps)
 
         # Open and iterate through log file
         with open(self.file_name, 'r') as input:
@@ -525,12 +529,14 @@ class GaussianLog():
                 
                 # If target optimisation step is met append results
                 if (opt_count == opt_steps[opt_step_ind]):
+                    print(opt_steps)
                     opt_step_ind += 1
                     mol_results[opt_count] = step_result
                     step_result = {}
                 
                     # Return if results calculated for all optimisation steps
-                    if opt_step_ind == len(opt_steps):  
+                    if opt_step_ind == len(opt_steps): 
+                        print(mol_results) 
                         return mol_results
 
 
@@ -743,8 +749,20 @@ class GaussianLog():
             for line in input:
                 if 'natoms' in line.lower():
                     self.atom_number = int(line.split()[1])
+                    break
 
 
+    def pull_multiplicity(self):
 
+        '''Class method to pull charge and multiplicity
+
+        Returns:
+         multiplicity: :class:`int` - multipliicity of molecule
+        '''
+
+        with open(self.file_name, 'r') as input:
+            for line in input:
+                if 'multiplicity' in line.lower():
+                    return int(line.split()[-1])
 
 
