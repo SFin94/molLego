@@ -12,11 +12,11 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.interpolate import griddata
 
 
-'''Script with some general plotting functions'''
+"""Script with some general plotting functions"""
 
 def plot_setup(figsizeX=8, figsizeY=6, fig=None, ax=None):
 
-    '''
+    """
     Function that sets some general settings for all plots
 
     Parameters:
@@ -27,13 +27,13 @@ def plot_setup(figsizeX=8, figsizeY=6, fig=None, ax=None):
 
     Returns:
      fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
-    '''
+    """
 
     # Set font parameters and colours
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.sans-serif'] = 'Arial'
     # colour_grey = '#3E3E3E'
-    # plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey}) 
+    # plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey})
 
     # Set figure and plot param(s) vs energy
     if fig == None and ax == None:
@@ -51,7 +51,7 @@ def plot_setup(figsizeX=8, figsizeY=6, fig=None, ax=None):
 
 def radial_plot_setup(figsizeX=6, figsizeY=6, fig=None, ax=None):
 
-    '''
+    """
     Function that sets some general settings for all plots
 
     Parameters:
@@ -62,13 +62,13 @@ def radial_plot_setup(figsizeX=6, figsizeY=6, fig=None, ax=None):
 
     Returns:
      fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
-    '''
+    """
 
     # Set font parameters and colours
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.sans-serif'] = 'Arial'
     colour_grey = '#3E3E3E'
-    plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey}) 
+    plt.rcParams.update({'text.color': colour_grey, 'axes.labelcolor': colour_grey, 'xtick.color': colour_grey, 'ytick.color': colour_grey})
 
     # Set figure and plot param(s) vs energy
     if fig == None and ax == None:
@@ -82,7 +82,7 @@ def radial_plot_setup(figsizeX=6, figsizeY=6, fig=None, ax=None):
 
 def plot_mols_E(mol_data, energy_col=['Relative E'], save=None, colour=None, conf_labels=None, line=False):
 
-    '''
+    """
     Function which plots molecules/conformers against the relative energy
 
     Parameters:
@@ -94,7 +94,7 @@ def plot_mols_E(mol_data, energy_col=['Relative E'], save=None, colour=None, con
     Returns:
      fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
 
-    '''
+    """
 
     fig, ax = plot_setup(figsizeX=8, figsizeY=7)
 
@@ -127,7 +127,7 @@ def plot_mols_E(mol_data, energy_col=['Relative E'], save=None, colour=None, con
 
 def plot_mols_all(mol_data, save=None, labels=None, enthalpy=False):
 
-    '''
+    """
     Function which plots molecules against relative E and G (and H)
 
     Parameters:
@@ -138,7 +138,7 @@ def plot_mols_all(mol_data, save=None, labels=None, enthalpy=False):
     Returns:
      fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
 
-    '''
+    """
 
     fig, ax = plot_setup()
 
@@ -173,7 +173,7 @@ def plot_mols_all(mol_data, save=None, labels=None, enthalpy=False):
 
 def plot_param_E(mol_data, parameter_col, energy_col='Relative E SCF', save=None, colour=None, scan=False):
 
-    '''
+    """
     Function which plots molecules/conformers against the relative energy
 
     Parameters:
@@ -187,7 +187,7 @@ def plot_param_E(mol_data, parameter_col, energy_col='Relative E SCF', save=None
     Returns:
      fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
 
-    '''
+    """
 
     fig, ax = plot_setup()
 
@@ -196,7 +196,7 @@ def plot_param_E(mol_data, parameter_col, energy_col='Relative E SCF', save=None
         colour = ['#D17968', '#12304e']
     elif len(colour[0]) == 1:
         colour = [colour]
-    
+
     # Set colours depending on whether molecule is optimised or just as same colour if not opt data
     if 'Optimised' in mol_data.columns.values:
         colour_list = []
@@ -227,7 +227,7 @@ def plot_param_E(mol_data, parameter_col, energy_col='Relative E SCF', save=None
 
 def plot_PES(mol_data, parameter_cols, energy_col='Relative E SCF', save=None, colour=None, opt_filter=True):
 
-    '''
+    """
     Function which plots a 2D PES for two parameters
 
      Parameters:
@@ -241,7 +241,7 @@ def plot_PES(mol_data, parameter_cols, energy_col='Relative E SCF', save=None, c
      Returns:
       fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
 
-     '''
+     """
 
     fig, ax = plot_setup(figsizeX=7.5, figsizeY=6)
 
@@ -280,7 +280,7 @@ def plot_PES(mol_data, parameter_cols, energy_col='Relative E SCF', save=None, c
 
 def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, colour=None, step_width=3000, line_buffer=0.08, label=True):
 
-    '''Function which plots a reaction profile
+    """Function which plots a reaction profile
 
     Parameters:
      reaction_data: pandas DataFrame
@@ -294,7 +294,7 @@ def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, c
     Returns:
      fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
 
-    '''
+    """
 
     fig, ax = plot_setup()
     paths = list(reaction_data['Reaction path'].unique())
@@ -337,7 +337,7 @@ def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, c
 
 def normalise_parameters(conformer_data, geom_parameters):
 
-    '''Function that updates parameter values in a dataframe to normalise all bond/angle/dihedral parameters to share the same axis for visualisation (all scaled to 0:1 range)
+    """Function that updates parameter values in a dataframe to normalise all bond/angle/dihedral parameters to share the same axis for visualisation (all scaled to 0:1 range)
 
     Distances are normalised to [0:1] range
     Angles are mapped from [0:180] range to [0:1] range
@@ -346,10 +346,10 @@ def normalise_parameters(conformer_data, geom_parameters):
     Parameters:
      conformer_data: pandas DataFrame - conformer dataframe with parameters in to be normalised
      geom_parameters: dict - keys:values are column headings to atom indexes defining the parameter
-    
+
     Returns:
      param_headings: list of str - parameter headings for the normalised parameters
-    '''
+    """
 
     param_headings = []
     for key, value in geom_parameters.items():
@@ -359,7 +359,7 @@ def normalise_parameters(conformer_data, geom_parameters):
             conformer_data["Norm " + key] = conformer_data[key]/180.
         else:
             conformer_data["Norm " + key] = (conformer_data[key]%360.)/360.
-        
+
         # Set parameter heading
         param_headings.append("Norm " + key)
 
@@ -368,15 +368,15 @@ def normalise_parameters(conformer_data, geom_parameters):
 
 def set_conformer_colours(conformer_data, energy_col):
 
-    '''Function that sets the colour for different conformers which can be normalised by energy values
+    """Function that sets the colour for different conformers which can be normalised by energy values
 
     Parameters:
      conformer_data: pandas DataFrame - conformer data
      energy_col: str - name of the dataframe column header corresponding to the thermodynamic quantity to normalise the colours of the conformers too
 
     Returns:
-     colblock/col_vals: list - colour code corresponding to each conformer 
-    '''
+     colblock/col_vals: list - colour code corresponding to each conformer
+    """
 
     # Calculate normalised energy to plot colour by if given
     if energy_col != None:
@@ -384,17 +384,17 @@ def set_conformer_colours(conformer_data, energy_col):
         # colmap = sns.cubehelix_palette(start=2.5, rot=.5, dark=0, light=0.5, as_cmap=True)
         colmap = sns.cubehelix_palette(as_cmap=True)
         for val in conformer_data['Norm E']:
-            colour_vals = [colmap(val)[:3] for val in conformer_data['Norm E']]    
+            colour_vals = [colmap(val)[:3] for val in conformer_data['Norm E']]
         return colour_vals
     else:
-    # Else set colours different for each conformer 
+    # Else set colours different for each conformer
         colblock = sns.cubehelix_palette(len(conformer_data.index))
         return colblock
 
-    
+
 def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, energy_col=None):
 
-    '''Function which plots conformers against several geometric parameters in a radial plot
+    """Function which plots conformers against several geometric parameters in a radial plot
 
     Parameters:
      conformer_data: pandas DataFrame - conformer data
@@ -406,7 +406,7 @@ def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, ene
     Returns:
      fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
 
-    '''
+    """
 
     fig, ax = radial_plot_setup()
 
@@ -418,7 +418,7 @@ def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, ene
     # Normalise conformer parameters
     param_headings = normalise_parameters(conformer_data, geom_parameters)
     param_headings.append(param_headings[0])
-    
+
     # Set colour
     if colour == None:
         conformer_data['Colour'] = set_conformer_colours(conformer_data, energy_col)
@@ -444,8 +444,8 @@ def plot_conf_radar(conformer_data, geom_parameters, save=None, colour=None, ene
 
 
 def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energy_col=None):
-    
-    '''Function which plots conformers against several geometric parameters in a linear plot
+
+    """Function which plots conformers against several geometric parameters in a linear plot
 
     Parameters:
      conformer_data: pandas DataFrame - conformer data
@@ -457,8 +457,8 @@ def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energ
     Returns:
      fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
 
-    '''
-    
+    """
+
     fig, ax = plot_setup()
     num_params = len(geom_parameters.keys())
     plot_params = list(geom_parameters.keys())
@@ -483,7 +483,7 @@ def plot_conf_map(conformer_data, geom_parameters, save=None, colour=None, energ
 
     ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, frameon=False, handletextpad=0.1, fontsize=9)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
-    
+
     # if energy_col != None:
     #     ax_cbar = inset_axes(ax, width="50%", height="3%", loc='upper right')
     #     plt.colorbar(cm.ScalarMappable(cmap=colmap), ax=ax, cax=ax_cbar, orientation="horizontal", ticks=[0, 1], label='$\Delta$G')

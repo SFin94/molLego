@@ -7,7 +7,7 @@ import molLego as ml
 
 if __name__ == '__main__':
 
-    '''Script that automatically plots an existing csv file containing reaction paths or processes a reaction from the raw log files in a system .conf file and plots the reaction profile.
+    """Script that automatically plots an existing csv file containing reaction paths or processes a reaction from the raw log files in a system .conf file and plots the reaction profile.
 
         The input file can be ana existing .csv or a .conf file.
 
@@ -19,7 +19,7 @@ if __name__ == '__main__':
             A   a.log   B
             B   b.log   C
             C   c.log
-    '''
+    """
 
     usage = "usage: %(prog)s [input_file(s)] [args]"
     parser = argparse.ArgumentParser(usage=usage)
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument("-t", "--tparams", dest="track_param_file", type=str, default=None, help="Name of text file containing any additional tracked parameter")
     parser.add_argument("-c", "--colour", dest="plot_colour", nargs='*', default=None, help="List of colour RGB codes (starting with '#' for plotting the reaction profile in")
     parser.add_argument("-z", "--zero", "--min", dest="min", nargs='*', type=str, default=None, help="The reaction point (identifier in csv file) for the reaction steps to be calculated relative to")
-    
+
     # Unpack args and input file
     args = parser.parse_args()
     input_file = args.input_file
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         # Creates dataframe of all reaction steps (global relatives and no repeats)
         reaction_steps_data = ml.mols_to_dataframe(reac_steps, mol_names=reac_step_names, save=args.save + '_rsteps')
 
-        # Calculate the reaction paths 
+        # Calculate the reaction paths
         reaction_paths = ml.construct_reaction_path(input_file, reac_step_names)
         # Initilise ReactionPath objects for each of the reaction pathways
         reaction_profile = ml.init_reaction_profile(reac_step_names, reac_steps, reaction_paths)

@@ -2,12 +2,12 @@ import numpy as np
 import sys
 
 
-'''Module containing functions to calculate geometric parameters of a molecule'''
+"""Module containing functions to calculate geometric parameters of a molecule"""
 
 
 def calc_param(param_set, geometry):
 
-    '''Function which calculates the bond, valence angle or dihedral of the inputted parameters - can take multiple parameters
+    """Function which calculates the bond, valence angle or dihedral of the inputted parameters - can take multiple parameters
 
     Parameters:
      param_set: nested list of ints - the sets of parameters to calculate the geometry for
@@ -15,7 +15,7 @@ def calc_param(param_set, geometry):
 
     Returns:
      param_val: list of floats - the calculated parameters for each one in the inputted param_set
-    '''
+    """
 
     param_val = []
 
@@ -36,14 +36,14 @@ def calc_param(param_set, geometry):
 
 def calc_dist(atom_one, atom_two):
 
-    ''' Simple function whih calculates the distance between two atoms
+    """ Simple function whih calculates the distance between two atoms
         Parameters:
          atom_one - np array; x, y, z coordinates of atom one
          atom_two - np array; x, y, z coordinates of atom two
 
         Returns:
          dist - float; distance between the two atoms
-        '''
+        """
     # Calculates the bond vector between the two atoms
     b_vec = atom_one - atom_two
     # Calculates the inner product of the vectors (magnitude)
@@ -53,7 +53,7 @@ def calc_dist(atom_one, atom_two):
 
 def calc_angle(atom_one, atom_two, atom_three):
 
-    ''' Simple function which calculates the angle between three atoms, middle atom is atom_two
+    """ Simple function which calculates the angle between three atoms, middle atom is atom_two
         Parameters:
          atom_one - np array; x, y, z coordinates of atom one
          atom_two - np array; x, y, z coordinates of atom two
@@ -61,7 +61,7 @@ def calc_angle(atom_one, atom_two, atom_three):
 
         Returns:
          angle - float; angle between the two vectors: (atom_two, atom_one) and (atom_two, atom_three)
-        '''
+        """
     # Calculate the two bond vectors
     b_one_vec = atom_one - atom_two
     b_two_vec = atom_three - atom_two
@@ -77,7 +77,7 @@ def calc_angle(atom_one, atom_two, atom_three):
 
 def calc_dihed(atom_one, atom_two, atom_three, atom_four):
 
-    ''' Simple function to calculate the dihedral angle between four atoms
+    """ Simple function to calculate the dihedral angle between four atoms
     Parameters:
      atom_one - np array; x, y, z coordinates of atom one
      atom_two - np array; x, y, z coordinates of atom two
@@ -86,7 +86,7 @@ def calc_dihed(atom_one, atom_two, atom_three, atom_four):
 
     Returns:
      dihedral - float; dihedral angle between the planes: (atom_one, Two, Three) and (atom_two, Three, Four)
-    '''
+    """
 
     b_one_vec = atom_two - atom_one
     b_two_vec = atom_three - atom_two
@@ -113,14 +113,14 @@ def calc_dihed(atom_one, atom_two, atom_three, atom_four):
 
 def geom_pull_xyz(input_file):
 
-    '''Function which extracts the optimised geometry of a molecule from an .xyz file.
+    """Function which extracts the optimised geometry of a molecule from an .xyz file.
 
         Parameters:
          input_file: Str - name of the input log file
 
         Returns:
          mol_coords: Numpy array (dim: numAtoms, 3) (float) - Results array of x, y, z coordinates for each atom
-        '''
+        """
 
     # Open and read input file
     with open(input_file, 'r') as xyz_file:
@@ -146,11 +146,11 @@ def geom_pull_xyz(input_file):
 
 def geom_push_xyz(output_file, num_atoms, atom_ids, coordinates):
 
-    '''Function which outputs the extracted geometry to an .xyz file.
+    """Function which outputs the extracted geometry to an .xyz file.
 
         Parameters:
          outputFile: Str - name of the output xyz file
-    '''
+    """
 
     # Open output file, print header lines then atom indexes and cartesian coordinates to file
     with open(output_file + '.xyz', 'w+') as output:

@@ -9,7 +9,7 @@ import molLego as ml
 
 if __name__ == '__main__':
 
-    '''Script that automatically plots molecules/conformers against energy values from an existing csv file or processes the data from the raw log files in a system .conf file.
+    """Script that automatically plots molecules/conformers against energy values from an existing csv file or processes the data from the raw log files in a system .conf file.
 
         The input file can be an existing .csv or .conf file.
 
@@ -21,7 +21,7 @@ if __name__ == '__main__':
             parameterKey atomInd1 atomInd2 [atomInd3 [atomInd4]]
         Where 2, 3 or 4 atom indexes (int) can be provided for bonds, angle or dihedrals. The indexes match those in the gaussian log file. The parameterKey will be both the dict key for the indexes and the heading in the results file for the parameter values.
 
-    '''
+    """
 
     usage = "usage: %(prog)s [inputFile(s)] [args]"
     parser = argparse.ArgumentParser(usage=usage)

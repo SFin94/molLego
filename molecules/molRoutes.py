@@ -7,12 +7,12 @@ import molLego.utilities.geom as geom
 import molLego.molecules.molecules as molecules
 
 
-'''A module of routines that interface with the Molecule classes'''
+"""A module of routines that interface with the Molecule classes"""
 
 
 def construct_mols(system_file):
 
-    '''Function which creates Molecule or MoleculeThermo object for each molecule in a system conf file
+    """Function which creates Molecule or MoleculeThermo object for each molecule in a system conf file
 
     Parameters:
      system_file: str - name of the system file containing the molecule names/keys and the log files to be parsed
@@ -23,7 +23,7 @@ def construct_mols(system_file):
     Returns:
      mol_names: list of str - molecule names/keys for each molecule in file [mol_key in system file]
      mols: list of :Molecule:/:MoleculeThermo: objects for each molecule in system file
-    '''
+    """
 
     # Read in system conf file
     with open(system_file) as input_file:
@@ -37,7 +37,7 @@ def construct_mols(system_file):
         if line[0] != '#':
             mol_names.append(line.split()[0])
             mol_files.append(line.split()[1].split(','))
-            
+
             # Create Molecule or MoleculeThermo object from the input file(s) in each entry of the .conf file
             mols.append(molecules.init_mol_from_log(mol_files[-1][0]))
             for extra_file in mol_files[-1][1:]:
@@ -49,7 +49,7 @@ def construct_mols(system_file):
 
 def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
 
-    '''Function which creates a dataframe for all of the molecules and can write to a csv
+    """Function which creates a dataframe for all of the molecules and can write to a csv
 
     Parameters:
      mols: list of Molecule or MoleculeThermo objects - instances for each molecule
@@ -59,7 +59,7 @@ def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
 
     Returns:
      molecule_df: pandas dataframe - dataframe of all molecules with realtive quantities calcualted
-    '''
+    """
 
     # Create a dataframe of molecule attributes depending on object type (Molecule or MoleculeThermo)
     data = []
@@ -93,7 +93,7 @@ def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
 
 def parse_tracked_params(system_file):
 
-    '''Function which parses any additional parameters to be tracked from an input file
+    """Function which parses any additional parameters to be tracked from an input file
 
         Input:
          system_file: str - name of input .txt file which contains any additional parameters to be tracked across the scan [indexes are expected to be the gaussian indexes]
@@ -106,7 +106,7 @@ def parse_tracked_params(system_file):
          tracked_params: dict:
                          key: str - param_name
                          value: list of ints - [atom_indexes]
-    '''
+    """
 
     # Initialise empty dict for params
     tracked_params = {}
@@ -121,7 +121,7 @@ def parse_tracked_params(system_file):
 
 def init_scan(*args, tracked_params=None):
 
-    '''Function that generates a list of molecule objects from a scan file
+    """Function that generates a list of molecule objects from a scan file
 
     Parameters:
      args: str - gaussian log files of scan results
@@ -129,7 +129,7 @@ def init_scan(*args, tracked_params=None):
 
     Returns:
      scan_molecules: List of Molecule objects for each step of scan
-    '''
+    """
 
     # Inititalise variables
     scan_molecules = []
@@ -160,15 +160,15 @@ def init_scan(*args, tracked_params=None):
                 parameters[scan_parameter['param_key']] = scan_parameter['atom_inds']
                 total_scan_steps *= (scan_parameter['num_steps'] + 1)
             opt_steps = list(range(1, total_scan_steps+1))
-        
+
         scan_molecules += molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
 
-    return scan_molecules, scan_info      
+    return scan_molecules, scan_info
 
 
 def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
 
-    '''Function to process a dataframe of molecules to plot and calculates relative E SCF (kJ/mol) or Relative E/G/H if thermodynamic properties given
+    """Function to process a dataframe of molecules to plot and calculates relative E SCF (kJ/mol) or Relative E/G/H if thermodynamic properties given
 
         Parameters:
          mols_data_full: pandas DataFrame - full dataframe for molecules
@@ -178,7 +178,7 @@ def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
 
         Returns:
          mols_data: pandas DataFrame - dataframe of the molecules to plot with relative (E SCF)/(E/G/H) columns for plotting
-    '''
+    """
 
     # Subset amount of data frame to plot
     if mols_to_plot != None:
@@ -204,7 +204,7 @@ def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
 
 def sum_mols(*args):
 
-    '''Function that adds two molecules together to creat a new one, e.g. for a reactant or product set
+    """Function that adds two molecules together to creat a new one, e.g. for a reactant or product set
 
     Parameters:
      args: Molecule objects - the molecules to be added
@@ -212,7 +212,7 @@ def sum_mols(*args):
     Returns:
      new_mol - ::class:: object for a molecule
 
-    '''
+    """
 
     # Set sums for quantities and empty lists
     escf_sum = 0.0
@@ -225,7 +225,7 @@ def sum_mols(*args):
         thermo = True
         # Thermo sums in order of e, h, g, s, zpe - should proabbly make as dict for consistency with other methods
         thermo_sums = [0.0, 0.0, 0.0, 0.0, 0.0]
-    
+
     # Add values for each molecule to quantity sums
     for mol in args:
 
@@ -258,7 +258,7 @@ def sum_mols(*args):
 
 def construct_reaction_path(system_file, mol_names=None):
 
-    '''Function that constructs connected reaction paths for a reaction from a .conf file
+    """Function that constructs connected reaction paths for a reaction from a .conf file
 
     Parameters:
      system_file: str - name of the conf file containing the reaction files, names and connectivities for each step in the reaction
@@ -266,7 +266,7 @@ def construct_reaction_path(system_file, mol_names=None):
 
     Returns:
      path_list: nested list - list of each seperate path in the reaction
-    ''' 
+    """
 
     # Read in system file
     with open(system_file) as file:
@@ -309,7 +309,7 @@ def construct_reaction_path(system_file, mol_names=None):
 
 def track_reaction_path(current_step, adjacency, current_path=[]):
 
-    '''Function that constructs a branch of a connected reaction path and used by construct_reaction_path to compile full raction pathways that may overlap
+    """Function that constructs a branch of a connected reaction path and used by construct_reaction_path to compile full raction pathways that may overlap
 
     Parameters:
      current_step: int - index of the molecule that the current step of the pathway is up to
@@ -317,7 +317,7 @@ def track_reaction_path(current_step, adjacency, current_path=[]):
 
     Returns:
      paths: nested list - lists of all reaction paths by the index of the molecule
-    '''
+    """
 
     current_path = current_path + [current_step]
     if np.count_nonzero(adjacency[current_step,:]) == 0:
@@ -334,7 +334,7 @@ def track_reaction_path(current_step, adjacency, current_path=[]):
 
 def reaction_profile_to_dataframe(reaction_profile, save=None, path_min=None):
 
-    '''Function that creates a reaction profile dataframe and optionally saves it to a csv file
+    """Function that creates a reaction profile dataframe and optionally saves it to a csv file
 
     Parameters:
      reaction_profile: list of ReactionPath objects - reaction path objects for each reaction pathway
@@ -343,7 +343,7 @@ def reaction_profile_to_dataframe(reaction_profile, save=None, path_min=None):
 
     Returns:
      reaction_profile_data: pd DataFrame - dataframe of the steps in each of the reaction pathways
-    '''
+    """
 
     reaction_profile_data = pd.DataFrame()
 
@@ -373,18 +373,18 @@ def reaction_profile_to_dataframe(reaction_profile, save=None, path_min=None):
 
 def process_input_file(input_file):
 
-    '''Function that processes the input file, if a conf file is given then the molecules are processed, creating Molecule/MoleculeThermo objects for each enetry in the conf file and converting to a DataFrame. If a csv file is given then the molecule DataFrame is parsed directly from the csv file
-    
+    """Function that processes the input file, if a conf file is given then the molecules are processed, creating Molecule/MoleculeThermo objects for each enetry in the conf file and converting to a DataFrame. If a csv file is given then the molecule DataFrame is parsed directly from the csv file
+
     Parameters:
      input_file: str - file name which should have either a .conf or .csv extension
 
     Returns:
-     mol_df: pd DataFrame - dataframe with all the molecule information in 
+     mol_df: pd DataFrame - dataframe with all the molecule information in
      [optional returns if .conf file is the input file type]
      molecules: list of Molecule/MoleculeThermo objects - created Molecule objects for each entry line in the conf file
 
-    '''
-    
+    """
+
     # Retrieve file type for input file
     file_type = str(input_file.split('.')[-1])
 
@@ -397,9 +397,9 @@ def process_input_file(input_file):
 
     # Parse in existing dataframe and set first column (mol_names) as index
     elif file_type == 'csv':
-        mol_df = pd.read_csv(input_file, index_col=0) 
+        mol_df = pd.read_csv(input_file, index_col=0)
         return mol_df
-    
+
     # Raise exception if file type is not recognised
     else:
         raise Exception('File extension not recognised (should be .conf or .csv)')

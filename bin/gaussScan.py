@@ -5,12 +5,12 @@ import pandas as pd
 import molLego as ml
 
 
-'''
+"""
 Script to store results from gaussian relaxed scan log file(s) to a dataframe (csv) and to optionally plot them or to plot results from an existing dataframe (csv file).
 
 Uses argparse for CL arguments
     Usage:"usage: %(prog)s [input_files] [args]"
-    
+
 Where:
     input_files: str - paths to either multiple gaussian log files (same parameter scanned in all of them); OR csv file with previous dataframe in [NB: if csv then scan parameter needs to be specified]
     args:
@@ -18,12 +18,12 @@ Where:
         '-t/--tparam': str - path to additional file containing other geometric parameters to track
         's/--save': str - name to save plot with (minus .png extension)
         '--noplot': bool [default:True] - if flag used then stores False and plot will not be plotted (e.g. if only want csv files from original log files)
-'''
+"""
 
 if __name__ == '__main__':
 
-    '''Parse in the input log files of the scan calculations and any additional input file containing tracked parameters.
-    '''
+    """Parse in the input log files of the scan calculations and any additional input file containing tracked parameters.
+    """
 
     usage = "usage: %(prog)s [input_file(s)] [args]"
     parser = argparse.ArgumentParser(usage=usage)
@@ -51,14 +51,14 @@ if __name__ == '__main__':
     else:
         scan_molecules, scan_info = ml.init_scan(*input_files, tracked_params=args.track_param_file)
 
-        # Set scan parameter/s from scan info 
+        # Set scan parameter/s from scan info
         if 'param_key' in scan_info.keys():
             scan_parameter = [scan_info['param_key']]
         else:
             scan_parameter = []
             for scan in scan_info.values():
                 scan_parameter.append(scan['param_key'])
-    
+
         # Set PES plot dimensionality from number of scan parameters
         args.plot = len(scan_parameter)
 
