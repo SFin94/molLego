@@ -170,7 +170,7 @@ def init_mol_from_log(logfile, opt_steps=[1], parameters=None):
     molecules = []
 
     # Parse all properties for the calculation type
-    mol_results = job.pull_properties(opt_steps=opt_steps)
+    mol_results = job.get_properties(opt_steps=opt_steps)
 
     # Initiate Molecule or MoleculeThermo object for each molecule
     for i, mol in enumerate(mol_results.values()):

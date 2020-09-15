@@ -464,9 +464,9 @@ class GaussianLog():
         else:
             return False
 
-    def pull_properties(self, opt_steps=[1]):
+    def get_properties(self, opt_steps=[1]):
         """
-        Parse properties from the log file.
+        Get properties from the log file.
 
         Parse properties such as the energy, thermodynamic data, geometry,
         and optimised information from specified optimsation step(s) in the log
