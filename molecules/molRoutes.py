@@ -153,7 +153,7 @@ def init_scan(*args, tracked_params=None):
             opt_steps = list(range(1, scan_info['num_steps']+2))
         else:
             # If rigid scan then needs more processing as potentially has mutltiple scan parameters
-            scan_info = scan_file.set_rigid_scan_info()
+            scan_info = scan_file.get_rigid_scan_info()
             total_scan_steps = 1
             # Set scan parameters in parameters dict and range of opt steps in file
             for scan_parameter in list(scan_info.values()):
