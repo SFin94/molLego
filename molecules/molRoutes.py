@@ -147,7 +147,7 @@ def init_scan(*args, tracked_params=None):
 
         # Get scan info - depending if rigid or relaxed scan
         if scan_file.job_type == 'scan_relaxed':
-            scan_info = scan_file.set_scan_info()
+            scan_info = scan_file.get_scan_info()
             # Set scan parameter in parameters dict and range of opt steps in file
             parameters[scan_info['param_key']] = scan_info['atom_inds']
             opt_steps = list(range(1, scan_info['num_steps']+2))
