@@ -114,7 +114,7 @@ def plot_mols_E(mol_data, energy_col=['Relative E'], save=None, colour=None, con
         conf_labels = mol_data.index
 
     # Set x and y labels and ticks
-    ax.set_xticklabels(conf_labels, rotation=45)
+    ax.set_xticklabels(conf_labels, rotation=15)
     ax.set_ylabel('Relative Energy (kJmol$^{-1}$)', fontsize=13)
     ax.set_xlabel('Molecule', fontsize=13)
     plt.legend(fontsize=13)
@@ -311,7 +311,7 @@ def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, c
     # Plot the lines and points for the profile (line_buffer and step_width can be altered to fit the profile)
     for p_ind, path in enumerate(paths):
         reac_path_data = reaction_data.loc[reaction_data['Reaction path'] == path]
-        ax.scatter(reac_path_data['Reaction coordinate'], reac_path_data[quantity_col], color=colour[p_ind], marker='_', s=step_width, lw=5)
+        ax.scatter(reac_path_data['Reaction coordinate'], reac_path_data[quantity_col], color=colour[p_ind], marker='_', s=step_width, lw=8)
         for rstep_ind in range(1, len(reac_path_data)):
             ax.plot([reac_path_data['Reaction coordinate'].iloc[rstep_ind-1]+line_buffer, reac_path_data['Reaction coordinate'].iloc[rstep_ind]-line_buffer], [reac_path_data[quantity_col].iloc[rstep_ind-1], reac_path_data[quantity_col].iloc[rstep_ind]],  color=colour[p_ind], linestyle='--')
 
