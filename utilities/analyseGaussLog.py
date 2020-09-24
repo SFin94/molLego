@@ -96,7 +96,6 @@ class GaussianLog():
         end_info_flag = '1\\1\\'
         pull_info_flags = {'%mem=': self._pull_job_start, end_info_flag: self._pull_job_end}
         extra_info_flags = {'modredundant': False, 'scan ': False}
-        composite_job = False
 
         # Iterate through file and pull job details
         with open(self.file_name, 'r') as input:
@@ -228,7 +227,7 @@ class GaussianLog():
         '''
 
         # Dict mapping job type to the properties contained in the log file
-        job_to_property = {'opt': ['energy', 'geom', 'opt'], 'freq': ['energy', 'geom','thermo', 'opt'], 'fopt': ['energy', 'geom', 'thermo', 'opt'], 'sp': ['energy', 'geom'], 'scan_relaxed': ['energy', 'geom', 'opt'], 'scan_rigid': ['energy', 'geom']}
+        job_to_property = {'opt': ['energy', 'geom', 'opt'], 'freq': ['energy', 'geom', 'thermo', 'opt'], 'fopt': ['energy', 'geom', 'thermo', 'opt'], 'sp': ['energy', 'geom'], 'scan_relaxed': ['energy', 'geom', 'opt'], 'scan_rigid': ['energy', 'geom']}
 
         # Dict of search flags in log file for each property
         property_flags = {'energy': 'SCF Done', 'geom': 'Standard orientation', 'opt': 'Optimized Parameters', 'thermo': 'Thermochemistry'}
@@ -490,7 +489,7 @@ class GaussianLog():
             return False
 
 
-    def pull_properties(self, opt_steps=[1], target_property=None, scale_factor=1.0):
+    def pull_properties(self, opt_steps=None, target_property=None, scale_factor=1.0):
         
         '''Class method to parse the energy, thermodynamic data, geometry and optimised information from specified optimsation step/s in the log file for a molecule.
 
@@ -513,10 +512,12 @@ class GaussianLog():
             pull_functions['energy'] = self._pull_mp2_energy
 
         # Set opt count to 2 if fopt calculation as thermo occurs after opt count met
-        if self.job_type == 'fopt' and opt_steps == [1]: #), self.job_type == 'freq']):
-            # if opt_steps == [1]:
-            opt_steps = [2]
-            print(opt_steps)
+        if opt_steps == None:
+            job_types = ('freq', 'opt', 'fopt')
+            try:
+                opt_steps = [job_types.index(self.job_type)]
+            except:
+                opt_steps = [1]
 
         # Open and iterate through log file
         with open(self.file_name, 'r') as input:
@@ -528,29 +529,30 @@ class GaussianLog():
                         opt_count += self._update_opt_count(property)
                 
                 # If target optimisation step is met append results
-                if (opt_count == opt_steps[opt_step_ind]):
-                    print(opt_steps)
+                if (opt_count == opt_steps[opt_step_ind]) and opt_steps[opt_step_ind] >= 1:
                     opt_step_ind += 1
                     mol_results[opt_count] = step_result
                     step_result = {}
                 
                     # Return if results calculated for all optimisation steps
                     if opt_step_ind == len(opt_steps): 
-                        print(mol_results) 
                         return mol_results
+            
+            # Append final step results (needed for frequency calculation)
+            mol_results[opt_count] = step_result
+            return mol_results
 
 
     def _pull_modredundant(self, input):
-
-        '''Class method that pulls the scan information from the log file
+        """
+        Pull scan information from the log file.
 
         Parameters: 
          input: iter object - lines of file
 
         Returns: 
          modred_input: list of str - list of all moredundant input lines from log file
-        '''
-
+        """
         # Goes to start of modredundant section then extracts all modredundant lines
         modred_input = []
         current_line = input.__next__()
@@ -598,8 +600,8 @@ class GaussianLog():
 
 
     def set_scan_info(self):
-
-        '''Class method that sets scan information for relaxed scan from a gaussian log file
+        """
+        Set scan information for relaxed scan from a gaussian log file.
 
         Returns:
         scan_info: dict -
@@ -607,8 +609,7 @@ class GaussianLog():
             atom_inds: list of int - indexes of the atoms in scan parameter,
             num_steps: int - number of scan steps
             step_size: float - size of the scan step}
-        '''
-
+        """
         # Set modredundant information flag
         modred_flag = 'The following ModRedundant input section has been read:'
 
@@ -617,6 +618,7 @@ class GaussianLog():
             for line in input:
                 if modred_flag in line:
                     modred_input = self._pull_modredundant(input)
+                    break
 
         # Process scan information from logfile modredundant input
         scan_info = self._process_modredundant(modred_input)
