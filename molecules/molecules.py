@@ -30,16 +30,15 @@ class Molecule():
         self.optimised = optimised
 
     def set_parameters(self, parameters, gauss_index=False):
-
-        '''Class method to set dict of parameters as additional attribute
+        """
+        Class method to set dict of parameters as additional attribute
         Sets class attributes:
          parameters: :class:`dict` - key is the parameter key and the value is the calculated parameter value from the molecules geometry
         
         Parameters:
          parameters: dict - parameter key (atoms): parameter atom indexes; by default should be pythonic index
          gauss_index: bool - flag that can be set to True if parameters are given as gaussian indexes (start at 1) and not pythonic indexes (start at 0) 
-        '''
-
+        """
         param_keys = list(parameters.keys())
 
         # If gaussian indexes then transform to python index
@@ -152,7 +151,7 @@ class ReactionPath():
             self.reac_coord = (reac_coord - reac_coord[0])/scale
 
 
-def init_mol_from_log(logfile, opt_steps=[1], parameters=None):
+def init_mol_from_log(logfile, opt_steps=None, parameters=None):
 
     '''Function that initiates a Molecule or MoleculeThermo object from a gaussian log file
 
@@ -175,6 +174,9 @@ def init_mol_from_log(logfile, opt_steps=[1], parameters=None):
     # Initiate Molecule or MoleculeThermo object for each molecule
     for i, mol in enumerate(mol_results.values()):
         if 'thermo' in list(job.job_property_flags.keys()):
+            # Check if 'opt' property is set
+            if not hasattr(mol, 'opt'):
+                mol['opt'] = False
             # Process dict of thermochemistry results to pass ZPE, thermally corrected E, H, G and TS to init
             molecule = MoleculeThermo(job.file_name, mol['energy'], mol['geom'], job.atom_ids, mol['opt'], zpe=mol['thermo']['ZPE'], e=mol['thermo']['E'], h=mol['thermo']['H'], g=mol['thermo']['G'], s=mol['thermo']['S'])
         else:
