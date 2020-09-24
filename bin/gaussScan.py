@@ -5,25 +5,34 @@ import pandas as pd
 import molLego as ml
 
 
-'''
-Script to store results from gaussian relaxed scan log file(s) to a dataframe (csv) and to optionally plot them or to plot results from an existing dataframe (csv file).
+"""
+Parse scan results from gaussian relaxed scan log file(s) to a dataframe (csv) and optionally plot them or plot results from an existing scan results dataframe (csv file).
 
 Uses argparse for CL arguments
     Usage:"usage: %(prog)s [input_files] [args]"
     
 Where:
-    input_files: str - paths to either multiple gaussian log files (same parameter scanned in all of them); OR csv file with previous dataframe in [NB: if csv then scan parameter needs to be specified]
+    input_files: `str`
+        Path/s to Gaussian log files (if multiple, same scan parameter across all); OR csv file with previous dataframe in [NB: if csv then scan parameter needs to be specified]
     args:
-        '-p/--sparam': str - scan parameter (corresponding to header of parameter column in csv file); only needs to be included if input file is csv file
-        '-t/--tparam': str - path to additional file containing other geometric parameters to track
-        's/--save': str - name to save plot with (minus .png extension)
-        '--noplot': bool [default:True] - if flag used then stores False and plot will not be plotted (e.g. if only want csv files from original log files)
-'''
+    '-p/--sparam': str
+        Scan parameter (corresponds to header of parameter column to be plotted in csv file); required if only input file is csv file
+    '-t/--tparam': `str`
+        Path to additional input file containing other geometric parameters to track.
+        Format of input file:
+            param_name (atom_types) atom1_ind atom2_ind [atom3_ind atom4_ind]
+            E.g. OPSC 3 1 2 7
+    's/--save': str - name to save plot with (minus .png extension)
+    '--noplot': `bool` 
+        If True then plots scan result [default:True]
+
+"""
 
 if __name__ == '__main__':
 
-    '''Parse in the input log files of the scan calculations and any additional input file containing tracked parameters.
-    '''
+    """
+    Parse in and process Gaussian relaxed scan log files and any additional input file containing tracked parameters.
+    """
 
     usage = "usage: %(prog)s [input_file(s)] [args]"
     parser = argparse.ArgumentParser(usage=usage)
