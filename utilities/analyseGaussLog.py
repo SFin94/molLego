@@ -74,6 +74,7 @@ class GaussianLog():
             self.charge = charge
             self.atom_ids = self._pull_atom_ids()
 
+            # Set scan type.
             if self.job_type.lower() == 'scan':
                 if extra_output['modredundant']:
                     self.job_type = 'scan_relaxed'
