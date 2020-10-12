@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--save", dest="save", type=str, default='', help="Name of csv file and plot to save, appended to _rsteps.csv, _rprofile.csv and _rprofile.png")
     parser.add_argument("-t", "--tparams", dest="track_param_file", type=str, default=None, help="Name of text file containing any additional tracked parameter")
     parser.add_argument("-c", "--colour", dest="plot_colour", nargs='*', default=None, help="List of colour RGB codes (starting with '#' for plotting the reaction profile in")
-    parser.add_argument("-z", "--zero", "--min", dest="min", nargs='*', type=str, default=None, help="The reaction point (identifier in csv file) for the reaction steps to be calculated relative to")
+    parser.add_argument("-z", "--zero", "--min", dest="min", nargs='*', default=None, help="The reaction point (identifier in csv file) for the reaction steps to be calculated relative to")
     
     # Unpack args and input file
     args = parser.parse_args()
@@ -56,7 +56,7 @@ if __name__ == '__main__':
         reaction_paths = ml.construct_reaction_path(input_file, reac_step_names)
         # Initilise ReactionPath objects for each of the reaction pathways
         reaction_profile = ml.init_reaction_profile(reac_step_names, reac_steps, reaction_paths)
-        print(args.min)
+
         # Create reaction profile data frame
         reaction_profile_data = ml.reaction_profile_to_dataframe(reaction_profile, save=args.save + '_rprofile', path_min=args.min)
 

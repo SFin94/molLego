@@ -171,7 +171,6 @@ class GaussianLog():
          job_type: :class:`str` - calculation type (Opt, Fopt, Freq, SP, Scan)
          sp: :class:`bool` - flag of whether the calculation is an optimisation or single point energy calculation
         '''
-
         raw_output = raw_output.split('\\')
         self.job_type = raw_output[3].lower()
         self.method, self.basis_set  = raw_output[4:6]
@@ -225,6 +224,8 @@ class GaussianLog():
         Parameters:
          target_property: list of str - target property/ies wanted from log file; overrides dafault scheme of using job type to set them
         '''
+        if self.job_type.lower() == 'fts':
+            self.job_type = 'fopt'
 
         # Dict mapping job type to the properties contained in the log file
         job_to_property = {'opt': ['energy', 'geom', 'opt'], 'freq': ['energy', 'geom', 'thermo', 'opt'], 'fopt': ['energy', 'geom', 'thermo', 'opt'], 'sp': ['energy', 'geom'], 'scan_relaxed': ['energy', 'geom', 'opt'], 'scan_rigid': ['energy', 'geom']}
@@ -295,16 +296,28 @@ class GaussianLog():
         # Set charge and remove any charge info from molecular formula
         mol_formula = self._set_charge(mol_formula)
 
-        while i < len(mol_formula)-1:
-            char = mol_formula[i]
-            while char.isdigit() == mol_formula[i+1].isdigit():
-                char += (mol_formula[i+1])
-                i += 1
-            self._set_character(char)
-            i += 1
-        # Add last entry if it wasn't part of another character
-        if i != len(mol_formula):
-            self._set_character(mol_formula[-1])
+        ## ISSUE with count
+        char = mol_formula[0]
+        for i in mol_formula[1:]:
+            # Check for switch in value type
+            if i.isdigit() != char.isdigit():
+                self._set_character(char)
+                char = i
+            else:
+                char += i
+        self._set_character(mol_formula[-1])
+
+        # while i < len(mol_formula)-1:
+        #     char = mol_formula[i]
+        #     print(char)
+        #     while char.isdigit() == mol_formula[i+1].isdigit():
+        #         char += (mol_formula[i+1])
+        #         i += 1
+        #     self._set_character(char)
+        #     i += 1
+        # # Add last entry if it wasn't part of another character
+        # if i != len(mol_formula):
+        #     self._set_character(mol_formula[-1])
 
         # Set atom ids - relies on self.atom_number already being set
         self.pull_atom_ids()

@@ -171,20 +171,18 @@ def init_mol_from_log(logfile, opt_steps=None, parameters=None):
     # Parse all properties for the calculation type
     mol_results = job.pull_properties(opt_steps=opt_steps)
 
-    # Initiate Molecule or MoleculeThermo object for each molecule
+    # Initiate Molecule or MoleculeThermo object for each molecule.
     for i, mol in enumerate(mol_results.values()):
-        if 'thermo' in list(job.job_property_flags.keys()):
-            # Check if 'opt' property is set
-            if not hasattr(mol, 'opt'):
-                mol['opt'] = False
+        
+        # Set opt property to False if not existing attribute.
+        if not hasattr(mol, 'opt'):
+            mol['opt'] = False
+        
+        try:
             # Process dict of thermochemistry results to pass ZPE, thermally corrected E, H, G and TS to init
             molecule = MoleculeThermo(job.file_name, mol['energy'], mol['geom'], job.atom_ids, mol['opt'], zpe=mol['thermo']['ZPE'], e=mol['thermo']['E'], h=mol['thermo']['H'], g=mol['thermo']['G'], s=mol['thermo']['S'])
-        else:
-            # Check if opt set or not 
-            if job.spe == False:
-                molecule = Molecule(job.file_name, mol_energy=mol['energy'], mol_geom=mol['geom'], atom_ids=job.atom_ids, optimised=mol['opt'])
-            else:
-                molecule = Molecule(job.file_name, mol_energy=mol['energy'], mol_geom=mol['geom'], atom_ids=job.atom_ids)
+        except:
+            molecule = Molecule(job.file_name, mol_energy=mol['energy'], mol_geom=mol['geom'], atom_ids=job.atom_ids, optimised=mol['opt'])
 
         # Set parameters for each molecule if given
         if parameters != None:

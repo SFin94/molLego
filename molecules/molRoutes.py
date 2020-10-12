@@ -339,7 +339,7 @@ def reaction_profile_to_dataframe(reaction_profile, save=None, path_min=None):
     Parameters:
      reaction_profile: list of ReactionPath objects - reaction path objects for each reaction pathway
      save: None/str - [optional, default:None] if provided then the name of the csv to save the dataframe too
-     min: str - [optional, default:None] the identifier of the molecule to calcualte the relative values as a minimum too
+     min: str - [optional, default:None] the identifier of the molecule to calculate the relative values as a minimum too
 
     Returns:
      reaction_profile_data: pd DataFrame - dataframe of the steps in each of the reaction pathways
@@ -350,9 +350,9 @@ def reaction_profile_to_dataframe(reaction_profile, save=None, path_min=None):
     # Process path minimum input to allow for a minimun for each reaction path to be specified
     if path_min == None:
         path_min = [None]*len(reaction_profile)
-    else:
-        if type(path_min) != list:
-            path_min = [path_min]*len(reaction_profile)
+    # else:
+    #     if len(path_min) != len(reaction_profile):
+    #         path_min = [path_min]*len(reaction_profile)
     ## want to add ability to give just a couple of arguments and be able to construct the list with None for others?
 
     # For each reaction path create dataframe then append additional columns
