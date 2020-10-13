@@ -4,6 +4,25 @@ import numpy as np
 from .utils import readlines_reverse, parse_mol_formula
 
 
+# Dict mapping job type to the properties contained in the log file
+job_to_property = {
+    'opt': ['energy', 'geom', 'opt'],
+    'freq': ['energy', 'geom', 'thermo', 'opt'],
+    'fopt': ['energy', 'geom', 'thermo', 'opt'],
+    'sp': ['energy', 'geom'],
+    'scan_relaxed': ['energy', 'geom', 'opt'],
+    'scan_rigid': ['energy', 'geom']
+    }
+
+# Dict of search flags in log file for each property
+property_flags = {
+    'energy': 'SCF Done',
+    'geom': 'Standard orientation',
+    'opt': 'Optimized Parameters',
+    'thermo': 'Thermochemistry'
+    }
+
+
 class GaussianLog():
     """
     Represents a Gaussian log file.
@@ -64,9 +83,11 @@ class GaussianLog():
 
         # Use end of file log for normal termination:
         if self.normal_termination:
-            output = self._pull_end_output()
+            output, job_input = self._pull_end_output()
+            output = output.split('\\')
 
-            self.job_type = output[3].lower()
+            # Remove job type and just parse from input line?
+            self.job_type = output[3]
             self.method, self.basis_set = output[4:6]
             atom_number, elements, charge = parse_mol_formula(output[6])
             self.atom_number = atom_number
@@ -89,8 +110,8 @@ class GaussianLog():
         # Try to use the beginning of the file job input data:
         else:
             try:
-                output = self._pull_start_output()
-
+                job_input = self._pull_start_output()
+                
                 # Use flags to try to deduce the job type.
                 calculation_flags = {
                     'opt': False,
@@ -178,31 +199,52 @@ class GaussianLog():
         return extra_info_flags
 
     def _pull_end_output(self):
+        """
+        Pull sections of end job output from normally terminated log file.
+
+        Returns
+        -------
+        output: `list of str`
+            Unprocessed lines from end job output.
+            First entry is caclulation information.
+            Second entry is the job input line.
+
+        """
+        # Initialise variables.
         output = ''
+        section_count = 0
+
         with open(self.file_name, 'r') as infile:
             line = next(infile)
             # Skip to the end log:
             while '1\\1\\' not in line:
                 line = next(infile)
-            # Pull the end log ouput:
-            while '\\\\' not in line:
-                output += line.strip()
+            # Pull the first two sections of end log ouput:
+            while section_count < 2:
+                section_count += ('\\\\' in line)
+                output += line.strip().lower()
                 line = next(infile)
-        return output.split('\\')
+
+        return output.split('\\\\')[:2]
 
     def _pull_start_output(self):
+        """
+        Pull start job output containing the calculation input from log file.
+
+        Returns
+        -------
+        output: `str`
+            Calculation input line.
+
+        """
         output = ''
         with open(self.file_name, 'r') as infile:
             line = next(infile)
             # Skip to the start log:
-            while '%mem=' not in line:
+            while '#' not in line:
                 line = next(infile)
             while '---' not in line:
-                line = next(infile)
-            line = next(infile)
-            # Pull the start log :
-            while '---' not in line:
-                output += line.strip()
+                output += line.strip().lower()
                 line = next(infile)
         return output
 
@@ -263,7 +305,7 @@ class GaussianLog():
             The IDs of the atoms in the molecule.
 
         """
-        # Initialise variables
+        # Initialise variables.
         atom_ids = []
         atom_id_flag = 'Charge = '
         jump_line_flags = [
