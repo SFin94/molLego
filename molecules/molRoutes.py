@@ -309,11 +309,10 @@ def construct_reaction_path(system_file):
         reaction_input = infile.read().splitlines()
 
     # Parse mol_names from .conf file input.
-    if mol_names == None:
-        mol_names = []
-        for el in reaction_input:
-            if el[0] != '#':
-                mol_names.append(line.split()[0])
+    mol_names = []
+    for el in reaction_input:
+        if el[0] != '#':
+            mol_names.append(el.split()[0])
 
     # Set neighbour list.
     branches = 1
@@ -321,8 +320,8 @@ def construct_reaction_path(system_file):
     step_neighbours = []
     for el in reaction_input:
         if el[0] != '#':
-            if len(line.split()) > 2:
-                step_neighbours.append(line.split()[2].split(','))
+            if len(el.split()) > 2:
+                step_neighbours.append(el.split()[2].split(','))
                 branches += len(step_neighbours[-1]) - 1
             else:
                 step_neighbours.append([])
