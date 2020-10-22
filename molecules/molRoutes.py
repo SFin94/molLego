@@ -1,3 +1,4 @@
+"""Module of routines that use Molecule/MoleculeThermo/ReactionPath objects."""
 import sys
 import numpy as np
 import pandas as pd
@@ -6,13 +7,9 @@ import molLego.utilities.analyseGaussLog as glog
 import molLego.utilities.geom as geom
 import molLego.molecules.molecules as molecules
 
-
-'''A module of routines that interface with the Molecule classes'''
-
-
 def construct_mols(system_file):
-
-    '''Function which creates Molecule or MoleculeThermo object for each molecule in a system conf file
+    """
+    Create Molecule or MoleculeThermo object for each molecule in a system conf file.
 
     Parameters:
      system_file: str - name of the system file containing the molecule names/keys and the log files to be parsed
@@ -23,8 +20,8 @@ def construct_mols(system_file):
     Returns:
      mol_names: list of str - molecule names/keys for each molecule in file [mol_key in system file]
      mols: list of :Molecule:/:MoleculeThermo: objects for each molecule in system file
-    '''
-
+    
+    """
     # Read in system conf file
     with open(system_file) as input_file:
         input = input_file.read().splitlines()
@@ -111,8 +108,8 @@ def parse_tracked_params(system_file):
     # Initialise empty dict for params
     tracked_params = {}
     # Parse in file and seperate the indexes from the parameter ID and save as an entry to the dict
-    with open(system_file, 'r') as input:
-        for el in input:
+    with open(system_file, 'r') as infile:
+        for el in infile:
             param = el.strip().split(' ')
             indexes = [int(ind)-1 for ind in param[1:]]
             tracked_params[param[0]] = indexes
@@ -214,23 +211,23 @@ def sum_mols(*args):
 
     '''
 
-    # Set sums for quantities and empty lists
+    # Set sums for quantities and empty lists.
     escf_sum = 0.0
-    atom_list, logfiles = [], []
+    atom_list, log_files = [], []
     optimised = True
     thermo = False
 
-    # Check if Molecue/MoleculeThermo object for summing thermo properties or not
+    # Check if Molecue/MoleculeThermo object for summing thermo properties or not.
     if hasattr(args[0], 'e'):
         thermo = True
-        # Thermo sums in order of e, h, g, s, zpe - should proabbly make as dict for consistency with other methods
+        # Thermo sums in order of e, h, g, s, zpe - should proabbly make as dict for consistency with other methods.
         thermo_sums = [0.0, 0.0, 0.0, 0.0, 0.0]
     
     # Add values for each molecule to quantity sums
     for mol in args:
 
-        # Combine shared Molecue/MoleculeThermo properties of logfile, atom ids and SCF energy
-        logfiles.append(mol.file_name)
+        # Combine shared Molecue/MoleculeThermo properties of logfile, atom ids and SCF energy.
+        log_files.append(mol.file_name)
         atom_list.append(mol.atom_ids)
         escf_sum += mol.escf
 
@@ -239,7 +236,7 @@ def sum_mols(*args):
             optimised = False
             print('Warning, one molecule in complex is not optimised')
 
-        # Sum thermodynamic values if present
+        # Sum thermodynamic values if present.
         if thermo == True:
             try:
                 for i, thermo_val in enumerate([mol.e, mol.h, mol.g, mol.s, mol.zpe]):
@@ -247,82 +244,43 @@ def sum_mols(*args):
             except AttributeError:
                 print('Molecule does not have correct thermodynamic values to be summed')
 
-    # Instantiate molecule class with summed values - not sure if summing ZPE is physical
+    # Change logfile list.
+    log_files = ','.join(map(str, log_files))
+
+    # Instantiate molecule class with summed values - not sure if summing ZPE is physical.
     if thermo == True:
-        new_mol = molecules.MoleculeThermo(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised, e=thermo_sums[0], h=thermo_sums[1], g=thermo_sums[2], s=thermo_sums[3])
+        new_mol = molecules.MoleculeThermo(log_files, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised, e=thermo_sums[0], h=thermo_sums[1], g=thermo_sums[2], s=thermo_sums[3])
     else:
-        new_mol = molecules.Molecule(logfiles, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised,)
+        new_mol = molecules.Molecule(log_files, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised,)
 
     return new_mol
 
-
-def construct_reaction_path(system_file, mol_names=None):
-
-    '''Function that constructs connected reaction paths for a reaction from a .conf file
-
-    Parameters:
-     system_file: str - name of the conf file containing the reaction files, names and connectivities for each step in the reaction
-     mol_names: list of str - [optional; default: None], identifiers for each of the molecules/reaction steps
-
-    Returns:
-     path_list: nested list - list of each seperate path in the reaction
-    ''' 
-
-    # Read in system file
-    with open(system_file) as file:
-        input = file.read().splitlines()
-
-    # Parse mol_names from system file if not already created
-    if mol_names == None:
-        mol_names = []
-        for line in input:
-            if line[0] != '#':
-                mol_names.append(line.split()[0])
-
-    # Set neighbour list from system file
-    branches = 1
-    num_steps = 0
-    step_neighbours = []
-    for line in input:
-        if line[0] != '#':
-            if len(line.split()) > 2:
-                step_neighbours.append(line.split()[2].split(','))
-                branches += len(step_neighbours[-1]) - 1
-            else:
-                step_neighbours.append([])
-            num_steps += 1
-
-    # Set adjacency matrix
-    adjacency = np.zeros((num_steps, num_steps))
-    for node, edge_set in enumerate(step_neighbours):
-        for edge in edge_set:
-            adjacency[node, mol_names.index(edge)] = 1
-
-    # Calculate path list from adjacency
-    path_list = []
-    reactant_nodes = np.nonzero(np.sum(adjacency, axis=0) == 0)[0]
-    for r_node in reactant_nodes:
-        path_list.append(track_reaction_path(r_node, adjacency))
-
-    return path_list
-
-
 def track_reaction_path(current_step, adjacency, current_path=[]):
+    """
+    Construct a branch of a reaction path.
 
-    '''Function that constructs a branch of a connected reaction path and used by construct_reaction_path to compile full raction pathways that may overlap
+    Parameters
+    ----------
+    current_step: `int`
+        Index of molecule of the current step in pathway.
+    adjacency: :numpy:`array`
+        Connecitivty matrix.
+        Entries are 1 for connected points or 0 for unconnected points.
+    current_path: `list`
+        Pathway up to current reaction step.
 
-    Parameters:
-     current_step: int - index of the molecule that the current step of the pathway is up to
-     adjacency: np array - connecitivty matrix where entries are 1 for connected points on a reaction path and 0 for unconnected points
-
-    Returns:
-     paths: nested list - lists of all reaction paths by the index of the molecule
-    '''
-
+    Returns
+    -------
+    path_list: `nested list`
+        List of reaction steps for each reaction path.
+    
+    """
+    # Append step to path and finish if final point.
     current_path = current_path + [current_step]
     if np.count_nonzero(adjacency[current_step,:]) == 0:
         return current_path
 
+    # Locate connecting reaction steps for current paths.
     paths = []
     next_path = np.nonzero(adjacency[current_step,:])[0]
     for path in next_path:
@@ -330,6 +288,59 @@ def track_reaction_path(current_step, adjacency, current_path=[]):
         for step in next_step:
             paths.append(step)
     return paths
+
+def construct_reaction_path(system_file):
+    """
+    Construct reaction paths from a reaction .conf file.
+
+    Parameters
+    ----------
+    system_file: `str`
+        Reaction .conf file
+
+    Returns
+    -------
+    path_list: `nested list`
+        List of reaction steps for each reaction path.
+    
+    """
+    # Read in reaction .conf file
+    with open(system_file) as infile:
+        reaction_input = infile.read().splitlines()
+
+    # Parse mol_names from .conf file input.
+    if mol_names == None:
+        mol_names = []
+        for el in reaction_input:
+            if el[0] != '#':
+                mol_names.append(line.split()[0])
+
+    # Set neighbour list.
+    branches = 1
+    num_steps = 0
+    step_neighbours = []
+    for el in reaction_input:
+        if el[0] != '#':
+            if len(line.split()) > 2:
+                step_neighbours.append(line.split()[2].split(','))
+                branches += len(step_neighbours[-1]) - 1
+            else:
+                step_neighbours.append([])
+            num_steps += 1
+
+    # Set adjacency matrix.
+    adjacency = np.zeros((num_steps, num_steps))
+    for node, edge_set in enumerate(step_neighbours):
+        for edge in edge_set:
+            adjacency[node, mol_names.index(edge)] = 1
+
+    # Calculate path list from adjacency.
+    path_list = []
+    reactant_nodes = np.nonzero(np.sum(adjacency, axis=0) == 0)[0]
+    for r_node in reactant_nodes:
+        path_list.append(track_reaction_path(r_node, adjacency))
+
+    return path_list
 
 
 def reaction_profile_to_dataframe(reaction_profile, save=None, path_min=None):
