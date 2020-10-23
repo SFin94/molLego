@@ -128,28 +128,6 @@ class MoleculeThermo(Molecule):
         self.g = g
         self.s = s
 
-class ReactionPath():
-
-    '''Class attributes:
-
-        reac_steps: :class:`MoleculeThermo objects` - molecule for each step of the reaction profile
-        reac_step_names: :class:`list` - str identifiers for each reaction step in the profile
-        reac_coord: :class:`` - floats between 0 and 1 of the reaction coordinate for each step
-         NB: This can either be calculated assuming equal spacing or passed explicitly
-     '''
-
-    def __init__(self, molecules, step_names, reac_coord=None):
-
-        self.reac_steps = molecules
-        self.reac_step_names = step_names
-
-        # Calculate the reaction coordinates for the path (assuming linear if not inputted)
-        if reac_coord == None:
-            self.reac_coord = np.linspace(0, 1, len(step_names))
-        else:
-            scale = reac_coord[-1] - reac_coord[0]
-            self.reac_coord = (reac_coord - reac_coord[0])/scale
-
 
 def init_mol_from_log(logfile, opt_steps=None, parameters=None):
 
@@ -243,43 +221,6 @@ def init_mol_from_xyz(xyzfile, parameters=None):
             molecule.append(Molecule(xyzfile, mol_energy=energy, mol_geom=geometry, atom_ids=atom_ids))
 
     return molecule
-
-
-def init_reaction_profile(reac_step_names, reac_steps, paths):
-
-    '''Function that initiates a ReactionProfile object for a reaction path
-
-    Parameters:
-     reac_step_names: list - str identifiers of the unique steps on the reaction profile
-     reac_steps: list - MoleculeThermo objects of the unique steps on the reaction profile
-     paths: nested list - indexes of the steps making up each reaction path in the profile
-
-    Returns:
-     reaction_profile: list of :class:objects -  List of ReactionPath objects containing the molecules in the path
-    '''
-
-    # Inititalise variables
-    reaction_profile = []
-
-    # For each reaction path create a ReactionProfile object and append each object to a list of all paths for the reaction profile
-    for reaction_path in paths:
-
-        # Set initial reaction path variables for the starting molecule on the path (the reactant)
-        reactants_node = reaction_path[0]
-        path_molecules = [reac_steps[reactants_node]]
-        path_names = [reac_step_names[reactants_node]]
-
-        # For each seperate path create a ReactionPath object
-        for path_step in reaction_path[1:]:
-            if path_step == reactants_node:
-                reaction_profile.append(ReactionPath(path_molecules, path_names))
-                path_molecules = []
-                path_names = []
-            path_molecules.append(reac_steps[path_step])
-            path_names.append(reac_step_names[path_step])
-        reaction_profile.append(ReactionPath(path_molecules, path_names))
-
-    return reaction_profile
 
 
 # def initMolFromDF(data_file, geom=False, optStep=1):
