@@ -33,7 +33,8 @@ if __name__ == '__main__':
     
     # Unpack args and input file.
     args = parser.parse_args()
-    input_file = args.input_file
+    input_file = args.input_file   
+    save = input_file.split('.')[0]
 
     # Process input file based on type.
     if input_file.split('.')[-1] == 'csv':
@@ -41,7 +42,6 @@ if __name__ == '__main__':
     else:
         # Create molecule objects for each reaction step in reaction conf.
         reac_step_names, reac_steps = ml.construct_mols(input_file)
-        save = input_file.split('.')[0]
 
         # Calculate any tracked parameters.
         if args.track_param_file != None:
@@ -51,15 +51,14 @@ if __name__ == '__main__':
                     step.set_parameters(parameters)
 
         # Create dataframe of all reaction steps (global relatives and no repeats).
-        reaction_steps_data = ml.mols_to_dataframe(reac_steps, mol_names=reac_step_names, save=save + '_rsteps')
+        reaction_steps_data = ml.mols_to_dataframe(reac_steps, mol_names=reac_step_names, 
+                                                    save=save + '_rsteps')
 
         # Calculate the reaction paths.
         reaction_paths = ml.construct_reaction_path(input_file)
         # Initilise ReactionPath objects for each of the reaction pathways.
-        reaction_profile = ml.init_reaction_profile(reac_step_names, reac_steps, reaction_paths)
-
-        # Create reaction profile data frame.
-        reaction_profile_data = ml.reaction_profile_to_dataframe(reaction_profile, save=save + '_rprofile', path_min=args.min)
+        reaction_profile_data = ml.construct_reaction_profile(reaction_steps_data, reaction_paths, 
+                                                                path_min=args.min, save=save + '_rprofile')
 
     # Plot reaction profile.
     fig, ax = ml.plot_reaction_profile(reaction_profile_data, save=save, colour=args.plot_colour)
