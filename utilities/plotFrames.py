@@ -14,21 +14,26 @@ from scipy.interpolate import griddata
 
 '''Script with some general plotting functions'''
 
-def plot_setup(figsizeX=8, figsizeY=6, fig=None, ax=None):
+def plot_setup(figsize_x=8, figsize_y=6, fig=None, ax=None):
+    """
+    Initialise plot with general settings.
 
-    '''
-    Function that sets some general settings for all plots
+    Parameters
+    ----------
+    figsize_x: `int`
+        x dimension of plot [default: 12]
+    figsize_y: `int`
+        y dimension of plot [default: 10]
+    fig: matplotlib fig object
+        If other type of plot is called first [default: None]
+    ax: matplotlib axes object
+        If other type of plot is called first [default: None]
 
-    Parameters:
-     figsizeX: int - x dimension of plot [default: 12]
-     figsizeY: int - y dimension of plot [default: 10]
-     fig: matplotlib fig object - if other type of plot is called first [default: None]
-     ax: matplotlib axes object - if other type of plot is called first [default: None]
-
-    Returns:
+    Returns
+    -------
      fig, ax: :matplotlib:fig, :matplotlib:ax objects for the plot
-    '''
-
+    
+    """
     # Set font parameters and colours
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.sans-serif'] = 'Arial'
@@ -37,7 +42,7 @@ def plot_setup(figsizeX=8, figsizeY=6, fig=None, ax=None):
 
     # Set figure and plot param(s) vs energy
     if fig == None and ax == None:
-        fig, ax = plt.subplots(figsize=(figsizeX,figsizeY))
+        fig, ax = plt.subplots(figsize=(figsize_x,figsize_y))
 
     # Remove plot frame lines
     ax.spines["top"].set_visible(False)
@@ -49,14 +54,14 @@ def plot_setup(figsizeX=8, figsizeY=6, fig=None, ax=None):
     return fig, ax
 
 
-def radial_plot_setup(figsizeX=6, figsizeY=6, fig=None, ax=None):
+def radial_plot_setup(figsize_x=6, figsize_y=6, fig=None, ax=None):
 
     '''
     Function that sets some general settings for all plots
 
     Parameters:
-     figsizeX: int - x dimension of plot [default: 12]
-     figsizeY: int - y dimension of plot [default: 10]
+     figsize_x: int - x dimension of plot [default: 12]
+     figsize_y: int - y dimension of plot [default: 10]
      fig: matplotlib fig object - if other type of plot is called first [default: None]
      ax: matplotlib axes object - if other type of plot is called first [default: None]
 
@@ -72,7 +77,7 @@ def radial_plot_setup(figsizeX=6, figsizeY=6, fig=None, ax=None):
 
     # Set figure and plot param(s) vs energy
     if fig == None and ax == None:
-        fig, ax = plt.subplots(figsize=(figsizeX,figsizeY), subplot_kw=dict(projection='polar'))
+        fig, ax = plt.subplots(figsize=(figsize_x,figsize_y), subplot_kw=dict(projection='polar'))
 
     # ax.spines["circle"].set_visible(False)
     ax.tick_params(labelsize=12)
@@ -96,7 +101,7 @@ def plot_mols_E(mol_data, energy_col=['Relative E'], save=None, colour=None, con
 
     '''
 
-    fig, ax = plot_setup(figsizeX=8, figsizeY=7)
+    fig, ax = plot_setup(figsize_x=8, figsize_y=7)
 
     # Plot conformer vs. relative energy
     if type(energy_col) != list:
@@ -243,7 +248,7 @@ def plot_PES(mol_data, parameter_cols, energy_col='Relative E SCF', save=None, c
 
      '''
 
-    fig, ax = plot_setup(figsizeX=7.5, figsizeY=6)
+    fig, ax = plot_setup(figsize_x=7.5, figsize_y=6)
 
     # Filter out any unoptimised points if optimised present
     opt_col = ('Optimised' in mol_data.columns.values)
@@ -278,53 +283,69 @@ def plot_PES(mol_data, parameter_cols, energy_col='Relative E SCF', save=None, c
     return fig, ax
 
 
-def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, colour=None, step_width=3000, line_buffer=0.08, label=True):
+def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None, 
+                            colour=None, step_width=3000, line_buffer=0.08, 
+                            label=True, fig=None, ax=None):
+    """
+    Plot a reaction profile.
 
-    '''Function which plots a reaction profile
+    Parameters
+    ----------
+    reaction_data: :pandas:`DataFrame`
+        The reaction profile dataframe to plot.
+    energy_col: `str`
+        Column header corresponding to the quantity to plot reaction steps by.
+        [default: 'Relative G']
+    save: `str`
+        File name to save figure as (minus .png extension). 
+        [deafult: None; no figure is saved]
+    colour: matplotlib cmap colour
+        Colour map to generate path plot colours from. 
+        [default: None type; if default then a cubehelix colour map is used].
+    step_width: `int`
+        The marker size of the scatter hlines used to mark the reaction step.
+        [default: 3000]
+    line_buffer: `float`
+        The buffer from the centre of the hline that the connecting lines will connect from.
+        [default: 0.05]
+    label: `bool`
+        if True then plots the indexes with each step.
+        f False then returns the figure without labels.
+    fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
 
-    Parameters:
-     reaction_data: pandas DataFrame
-     energy_col: str - header for relative energy column in dataframe [default: 'Relative E']
-     save: str - name of image to save plot too (minus .png extension) [deafult: None type]
-     colour: matplotlib cmap colour - colour map to generate path plot colours from [default: None type; if default then a cubehelix colour map is used].
-     step_width: int - the marker size of the scatter hlines used to mark the reaction steps [default: 3000]
-     line_buffer: float - the buffer from the centre of the hline that the connecting lines will connect from [default: 0.05]
-     label: bool - if True then plots the indexes with each step, if False then returns the figure without labels
+    Returns
+    -------
+    fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
 
-    Returns:
-     fig, ax - :matplotlib:fig, :matplotlib:ax objects for the plot
-
-    '''
-
-    fig, ax = plot_setup()
+    """
+    fig, ax = plot_setup(fig=fig, ax=ax)
     paths = list(reaction_data['Reaction path'].unique())
-    label_buffer = line_buffer - 0.01
 
-    # Set colours if not provided - the number of paths will be number of colours
-#    colours = sns.cubehelix_palette(len(paths))
+    # Set colours if not provided - number of reaction paths will be number of colours.
     if colour == None:
         col_pallete = sns.color_palette("cubehelix", len(paths))
         colour = []
         for p_ind in range(len(paths)):
             colour.append(col_pallete[paths.index(p_ind)])
 
-    # Plot the lines and points for the profile (line_buffer and step_width can be altered to fit the profile)
+    # Plot the lines and points for the profile (alter line_buffer and step_width to fit the profile).
     for p_ind, path in enumerate(paths):
         reac_path_data = reaction_data.loc[reaction_data['Reaction path'] == path]
-        ax.scatter(reac_path_data['Reaction coordinate'], reac_path_data[quantity_col], color=colour[p_ind], marker='_', s=step_width, lw=8)
+        ax.scatter(reac_path_data['Rx'], reac_path_data[quantity_col], color=colour[p_ind], marker='_', s=step_width, lw=8)
         for rstep_ind in range(1, len(reac_path_data)):
-            ax.plot([reac_path_data['Reaction coordinate'].iloc[rstep_ind-1]+line_buffer, reac_path_data['Reaction coordinate'].iloc[rstep_ind]-line_buffer], [reac_path_data[quantity_col].iloc[rstep_ind-1], reac_path_data[quantity_col].iloc[rstep_ind]],  color=colour[p_ind], linestyle='--')
+            ax.plot([reac_path_data['Rx'].iloc[rstep_ind-1]+line_buffer, reac_path_data['Rx'].iloc[rstep_ind]-line_buffer], [reac_path_data[quantity_col].iloc[rstep_ind-1], reac_path_data[quantity_col].iloc[rstep_ind]],  color=colour[p_ind], linestyle='--')
 
-            # Plot labels with dataframe index and energy label unless False, plot reactants at the end
+            # Plot labels with dataframe index and energy label.
             if label == True:
-                step_label = reac_path_data.index.values[rstep_ind] + ' (' + str(int(reac_path_data[quantity_col].iloc[rstep_ind])) + ')'
-                ax.text(reac_path_data['Reaction coordinate'].iloc[rstep_ind]-label_buffer, reac_path_data[quantity_col].iloc[rstep_ind]+6, step_label, color=colour[p_ind], fontsize=11)
-
+                step_label = reac_path_data.index.values[rstep_ind] + '\n(' + str(int(reac_path_data[quantity_col].iloc[rstep_ind])) + ')'
+                ax.text(reac_path_data['Rx'].iloc[rstep_ind], reac_path_data[quantity_col].iloc[rstep_ind]+6, step_label, color=colour[p_ind], fontsize=11, horizontalalignment='center')
+        
+        # Plot labels of reactants.
         if label == True:
-            reactant_label = reac_path_data.index.values[0] + ' (' + str(int(reac_path_data[quantity_col].iloc[0])) + ')'
-            ax.text(reac_path_data['Reaction coordinate'].iloc[0]-label_buffer, reac_path_data[quantity_col].iloc[0]+6, reactant_label, color=colour[p_ind], fontsize=11)
+            reactant_label = reac_path_data.index.values[0] + '\n(' + str(int(reac_path_data[quantity_col].iloc[0])) + ')'
+            ax.text(reac_path_data['Rx'].iloc[0], reac_path_data[quantity_col].iloc[0]+6, reactant_label, color=colour[p_ind], fontsize=11, horizontalalignment='center')
 
-    # Set x and y labels
+    # Set figure properties.
     ax.set_xlabel('R$_{x}$', fontsize=13)
     ax.set_ylabel('$\Delta$G (kJmol$^{-1}$)', fontsize=13)
     ax.set_xticks([])
