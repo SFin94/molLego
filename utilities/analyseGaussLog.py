@@ -225,10 +225,8 @@ class GaussianLog():
                         section_count += ('\\\\' in line)
                         output += line.strip().lower()
                         line = next(infile)
-
                     break
             return output.split('\\\\')[:2]
-
 
     def _pull_start_output(self):
         """
@@ -523,23 +521,23 @@ class GaussianLog():
         ----------
         opt_steps : :class:`list of int`, optional
             Target optimisation/geometry step(s) wanted from the scan (rigid
-            scan 1`spe=True``; relaxed scan `spe=False`) or optimisation
+            scan `spe=True``; relaxed scan `spe=False`) or optimisation
             trajectory (``spe=True``).
 
         Returns
         -------
         :class:`dict of dicts`
             A dictionary containing target properties for the molecule with
-            the key as the optimisation/sp count [opt_steps]
+            the key as the optimisation/sp count [opt_steps].
 
         """
-        # Initialise variables
+        # Initialise variables.
         step_result = {}
         opt_count = 0
         opt_step_ind = 0
         mol_results = {}
 
-        # Mapping of functions to property
+        # Mapping of functions to property.
         pull_functions = {
             'energy': self._pull_energy,
             'geom': self._pull_geometry,
@@ -547,36 +545,37 @@ class GaussianLog():
             'opt': self._pull_optimised
             }
 
+        # Set alternate flag if MP2 energy.
         if self.job_property_flags['energy'] == 'EUMP2':
             pull_functions['energy'] = self._pull_mp2_energy
 
         # Set opt count to 2 if fopt calculation
-        # as thermo occurs after opt count met
-        if any([self.job_type == 'fopt', self.job_type == 'freq']):
+        # as thermo occurs after opt count met.
+        if self.job_type == 'fopt':
             opt_steps = [2] if opt_steps == [1] else opt_steps
 
-        # Open and iterate through log file
+        # Open and iterate through log file.
         with open(self.file_name, 'r') as infile:
             for line in infile:
-                # Check if any property is in the line and set property value
+                # Check for property in the line and set property value.
                 for prop, flag in self.job_property_flags.items():
                     if flag in line:
                         step_result[prop] = pull_functions[prop](infile, line)
                         opt_count += self._update_opt_count(prop)
 
-                # If target optimisation step is met append results
+                # If target optimisation step is met append results.
                 if (opt_count == opt_steps[opt_step_ind]):
                     opt_step_ind += 1
                     mol_results[opt_count] = step_result
                     step_result = {}
 
-                    # Return if results calculated for all optimisation steps
+                    # Return results if calculated for all optimisation steps.
                     if opt_step_ind == len(opt_steps):
                         return mol_results
 
     def _pull_modredundant(self, infile):
         """
-        Pull the scan information from the log file.
+        Pull modredundant input from the log file.
 
         Parameters
         ----------
@@ -599,7 +598,7 @@ class GaussianLog():
 
     def _process_modredundant(self, modred_input):
         """
-        Process the scan information from the modredundant input.
+        Process scan information from modredundant input.
 
         Parameters
         ----------
