@@ -23,9 +23,9 @@ def parse_mol_formula(mol_formula):
     """
     Extract elements, number of atoms and charge from molecular formula.
 
-    If charge is present then appended on the end in ().
+    If charge is present then appended on the end in () with sign last.
     Example format:
-        C4H9O(-1)
+        C4H9O1(1-)
 
     Parameters
     ----------
@@ -55,24 +55,24 @@ def parse_mol_formula(mol_formula):
     mol_formula = mol_formula.split('(')[0]
 
     # Find individual elements in the molecular formula.
-    i = 0
-
-    while i < len(mol_formula)-1:
-        char = mol_formula[i]
-        while char.isdigit() is mol_formula[i+1].isdigit():
-            char += mol_formula[i+1]
-            i += 1
-        # Identify if an element or a count.
-        if char.isdigit():
-            atom_number += int(char)
-        else:
-            elements.append(char)
-        i += 1
-        # Add last entry if not already included
-        if i != len(mol_formula):
-            if mol_formula[-1].isdigit():
-                atom_number += int(mol_formula[-1])
+    char = mol_formula[0]
+    for i in mol_formula[1:]:
+        # Check for switch in value type.
+        if i.isdigit() != char.isdigit():
+            # Identify if an element or a count.
+            if char.isdigit():
+                atom_number += int(char)
             else:
-                elements.append(mol_formula[-1])
+                elements.append(char)
+            char = i
+        else:
+            char += i
+    # Add last characters.
+    if char.isdigit():
+        atom_number += int(char)
+    else:
+        elements.append(char)
 
     return atom_number, elements, charge
+
+
