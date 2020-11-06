@@ -1,29 +1,42 @@
-import numpy as np
+"""Module containing functions to calculate geometric parameters."""
+
 import sys
-
-
-"""Module containing functions to calculate geometric parameters of a molecule"""
-
+import numpy as np
 
 def calc_param(param_set, geometry):
-
-    """Function which calculates the bond, valence angle or dihedral of the inputted parameters - can take multiple parameters
-
-    Parameters:
-     param_set: nested list of ints - the sets of parameters to calculate the geometry for
-     geometry: np array (dim: numAtoms, 3) (float) - Results array of x, y, z coordinates for each atom (might work as list)
-
-    Returns:
-     param_val: list of floats - the calculated parameters for each one in the inputted param_set
     """
+    Calculate geometric parameters (bond distance, angle or dihedral).
+    
+    Notes
+    -----
+    Multiple geometric parameters can be calculated for an input geometry. 
+    Geometric parameter calculated is defined by number of atom indexes.
+    Example:
+        [0, 1]: Bond distance
+        [0, 1, 2]: Bond angle
+        [0, 1, 2, 3]: Dihedral  
 
+    Parameters
+    ----------
+    param_set: nested list of ints
+        Atom indexes for each parameter to be calculated.
+    geometry: `numpy.ndarray`
+        A `(numAtoms, 3)` array of x, y, z coordinates for each atom.
+
+    Returns
+    -------
+    param_val: `list of floats`
+        Calculated parameter values.
+    
+    """
+    # Initialise variables.
     param_val = []
 
-    # Tests to see if multiple parameters or not
+    # Checks for multiple paramters.
     if type(param_set[0]) != list:
         param_set = [param_set]
 
-    # Check number of indexes specifying each parameter and calcualte corresponding value (bond, angle or dihedral)
+    # Calculate geometric paramter for the number of atom indexes specified.
     for param in param_set:
         if len(param) == 2:
             param_val.append(calc_dist(geometry[param[0]], geometry[param[1]]))
@@ -35,15 +48,22 @@ def calc_param(param_set, geometry):
 
 
 def calc_dist(atom_one, atom_two):
+    """
+    Calculate bond distance between two atoms.
 
-    """ Simple function whih calculates the distance between two atoms
-        Parameters:
-         atom_one - np array; x, y, z coordinates of atom one
-         atom_two - np array; x, y, z coordinates of atom two
+    Parameters
+    ----------
+    atom_one: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom one.
+    atom_two: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom two.
 
-        Returns:
-         dist - float; distance between the two atoms
-        """
+    Returns
+    -------
+    dist: `float`
+        Distance between two atoms.
+
+    """
     # Calculates the bond vector between the two atoms
     b_vec = atom_one - atom_two
     # Calculates the inner product of the vectors (magnitude)
@@ -52,17 +72,25 @@ def calc_dist(atom_one, atom_two):
 
 
 def calc_angle(atom_one, atom_two, atom_three):
+    """
+    Calculate angle between three atoms (A(a, b, c) for atoms bonded: a-b-c).
 
-    """ Simple function which calculates the angle between three atoms, middle atom is atom_two
-        Parameters:
-         atom_one - np array; x, y, z coordinates of atom one
-         atom_two - np array; x, y, z coordinates of atom two
-         atom_three - np array; x, y, z coordinates of atom three
+    Parameters
+    ----------
+    atom_one: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom one.
+    atom_two: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom two.
+    atom_three: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom three.
 
-        Returns:
-         angle - float; angle between the two vectors: (atom_two, atom_one) and (atom_two, atom_three)
-        """
-    # Calculate the two bond vectors
+    Returns
+    -------    
+    angle: `float`
+        Angle between three atoms.
+
+    """
+    # Calculate the two bond vectors (0-1 and 1-2)
     b_one_vec = atom_one - atom_two
     b_two_vec = atom_three - atom_two
 
@@ -76,52 +104,64 @@ def calc_angle(atom_one, atom_two, atom_three):
 
 
 def calc_dihed(atom_one, atom_two, atom_three, atom_four):
-
-    """ Simple function to calculate the dihedral angle between four atoms
-    Parameters:
-     atom_one - np array; x, y, z coordinates of atom one
-     atom_two - np array; x, y, z coordinates of atom two
-     atom_three - np array; x, y, z coordinates of atom three
-     atomFour - np array; x, y, z coordinates of atom four
-
-    Returns:
-     dihedral - float; dihedral angle between the planes: (atom_one, Two, Three) and (atom_two, Three, Four)
     """
+    Calculate dihedral between four atoms (D(a,b,c,d) for atoms: a-b-c-d).
 
+    Parameters
+    ----------
+    atom_one: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom one.
+    atom_two: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom two.
+    atom_three: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom three.
+    atom_four: `numpy.ndarray`
+        A `(1, 3)` array of x, y, z coordinates of atom four.
+
+    Returns
+    -------
+    dihedral: `float`
+        Dihedral between four atoms.
+
+    """
+    # Calculate bond vectors.
     b_one_vec = atom_two - atom_one
     b_two_vec = atom_three - atom_two
     b_three_vec = atom_four - atom_three
 
-    # Calculate the norms to the planes
+    # Calculate norms to the planes.
     n_one = np.cross(b_one_vec, b_two_vec)
     n_two = np.cross(b_two_vec, b_three_vec)
 
-    # Normalise the two vectors
+    # Normalise the vectors.
     n_one /= np.linalg.norm(n_one)
     n_two /= np.linalg.norm(n_two)
     b_two_vec /= np.linalg.norm(b_two_vec)
 
-    # Find third vector to create orthonormal frame
+    # Find third vector to create orthonormal frame.
     m_one = np.cross(n_one, b_two_vec)
 
-    # Evaluate n2 w.r.t the orthonormal basis
+    # Evaluate n2 w.r.t the orthonormal basis.
     x = np.dot(n_two, n_one)
     y = np.dot(n_two, m_one)
 
-    return(np.arctan2(-y, x)*(180/np.pi))
+    return np.arctan2(-y, x)*(180/np.pi)
 
 
 def geom_pull_xyz(input_file):
+    """
+    Pull geometry of a molecule from an .xyz file.
 
-    """Function which extracts the optimised geometry of a molecule from an .xyz file.
+    Parameters
+    ----------
+    input_file: `str`
+        Name/path of the input xyz file/
 
-        Parameters:
-         input_file: Str - name of the input log file
-
-        Returns:
-         mol_coords: Numpy array (dim: numAtoms, 3) (float) - Results array of x, y, z coordinates for each atom
-        """
-
+    Returns
+    -------
+    mol_coords: Numpy array (dim: numAtoms, 3) (float) - Results array of x, y, z coordinates for each atom
+    
+    """
     # Open and read input file
     with open(input_file, 'r') as xyz_file:
 
@@ -141,17 +181,19 @@ def geom_pull_xyz(input_file):
                 for j in range(1, 3):
                     mol_coords[i, j] = float(el.split()[j])
 
-    return(mol_coords, atom_ids)
+    return mol_coords, atom_ids
 
 
 def geom_push_xyz(output_file, num_atoms, atom_ids, coordinates):
-
-    """Function which outputs the extracted geometry to an .xyz file.
-
-        Parameters:
-         outputFile: Str - name of the output xyz file
     """
+    Write geometry to an .xyz file.
 
+    Parameters
+    ----------
+    output_file: `str`
+        Name/path of output xyz file.
+
+    """
     # Open output file, print header lines then atom indexes and cartesian coordinates to file
     with open(output_file + '.xyz', 'w+') as output:
         print(num_atoms, file=output)

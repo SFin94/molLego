@@ -21,22 +21,26 @@ def readlines_reverse(filename):
 
 def parse_mol_formula(mol_formula):
     """
-    Parse the molecular formula to get the atoms and charge.
+    Extract elements, number of atoms and charge from molecular formula.
+
+    Notes
+    -----
+    If charge is present then appended on the end in ()
+    Example:
+        C4H9O(-1)
 
     Parameters
     ----------
-    mol_formula : :class:`str`
+    mol_formula: `str`
         The molecular formula to be parsed.
 
     Returns
     -------
-    :class:`int`
+    atom_number: `int`
         The number of atoms in the molecule.
-
-    :class:`list of str`
+    elements: `list of str`
         The list of elements present in the molecule.
-
-    :class:`int`
+    charge: `int`
         The charge of the molecule.
 
     """
