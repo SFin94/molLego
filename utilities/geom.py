@@ -7,8 +7,6 @@ def calc_param(param_set, geometry):
     """
     Calculate geometric parameters (bond distance, angle or dihedral).
     
-    Notes
-    -----
     Multiple geometric parameters can be calculated for an input geometry. 
     Geometric parameter calculated is defined by number of atom indexes.
     Example:
@@ -18,14 +16,14 @@ def calc_param(param_set, geometry):
 
     Parameters
     ----------
-    param_set: nested list of ints
+    param_set : nested list of ints
         Atom indexes for each parameter to be calculated.
-    geometry: `numpy.ndarray`
+    geometry : `numpy.ndarray`
         A `(numAtoms, 3)` array of x, y, z coordinates for each atom.
 
     Returns
     -------
-    param_val: `list of floats`
+    param_val : `list of floats`
         Calculated parameter values.
     
     """
@@ -53,14 +51,14 @@ def calc_dist(atom_one, atom_two):
 
     Parameters
     ----------
-    atom_one: `numpy.ndarray`
+    atom_one : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom one.
-    atom_two: `numpy.ndarray`
+    atom_two : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom two.
 
     Returns
     -------
-    dist: `float`
+    dist : `float`
         Distance between two atoms.
 
     """
@@ -77,16 +75,16 @@ def calc_angle(atom_one, atom_two, atom_three):
 
     Parameters
     ----------
-    atom_one: `numpy.ndarray`
+    atom_one : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom one.
-    atom_two: `numpy.ndarray`
+    atom_two : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom two.
-    atom_three: `numpy.ndarray`
+    atom_three : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom three.
 
     Returns
     -------    
-    angle: `float`
+    angle : `float`
         Angle between three atoms.
 
     """
@@ -109,18 +107,18 @@ def calc_dihed(atom_one, atom_two, atom_three, atom_four):
 
     Parameters
     ----------
-    atom_one: `numpy.ndarray`
+    atom_one : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom one.
-    atom_two: `numpy.ndarray`
+    atom_two : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom two.
-    atom_three: `numpy.ndarray`
+    atom_three : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom three.
-    atom_four: `numpy.ndarray`
+    atom_four : `numpy.ndarray`
         A `(1, 3)` array of x, y, z coordinates of atom four.
 
     Returns
     -------
-    dihedral: `float`
+    dihedral : `float`
         Dihedral between four atoms.
 
     """
@@ -154,12 +152,13 @@ def geom_pull_xyz(input_file):
 
     Parameters
     ----------
-    input_file: `str`
+    input_file : `str`
         Name/path of the input xyz file/
 
     Returns
     -------
-    mol_coords: Numpy array (dim: numAtoms, 3) (float) - Results array of x, y, z coordinates for each atom
+    mol_coords : `numpy.ndarray`
+        A `(numAtoms, 3)` of x, y, z coordinates for each atom
     
     """
     # Open and read input file
@@ -190,7 +189,7 @@ def geom_push_xyz(output_file, num_atoms, atom_ids, coordinates):
 
     Parameters
     ----------
-    output_file: `str`
+    output_file : `str`
         Name/path of output xyz file.
 
     """

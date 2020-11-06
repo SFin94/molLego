@@ -23,24 +23,22 @@ def parse_mol_formula(mol_formula):
     """
     Extract elements, number of atoms and charge from molecular formula.
 
-    Notes
-    -----
-    If charge is present then appended on the end in ()
-    Example:
+    If charge is present then appended on the end in ().
+    Example format:
         C4H9O(-1)
 
     Parameters
     ----------
-    mol_formula: `str`
+    mol_formula : `str`
         The molecular formula to be parsed.
 
     Returns
     -------
-    atom_number: `int`
+    atom_number : `int`
         The number of atoms in the molecule.
-    elements: `list of str`
+    elements : `list of str`
         The list of elements present in the molecule.
-    charge: `int`
+    charge : `int`
         The charge of the molecule.
 
     """
