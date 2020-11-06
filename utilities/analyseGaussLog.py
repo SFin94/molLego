@@ -37,7 +37,7 @@ class GaussianLog():
 
     basis_set : :class:`str`
         The basis set of the calculation.
-
+ 
     charge : :class:`int`
         The charge of the molecule.
 
@@ -50,7 +50,7 @@ class GaussianLog():
     method : :class:`str`
         The method of the calculation (functional, etc.).
 
-    job_property_flags : :class:`dict`
+    properties : :class:`dict`
         A :class:`dict`, where the key is a property type and the value
         is the corresponding string flag for parsing the property from
         the Gaussian log file.
@@ -67,17 +67,17 @@ class GaussianLog():
 
     """
 
-    def __init__(self, logfile):
+    def __init__(self, log_file):
         """
         Initialise from Gaussian log file.
 
         Parameters
         ----------
-        logfile : :class:`str`
-            The path to the parent log file.
+        log_file : :class:`str`
+            The name/path to the parent log file.
 
         """
-        self.file_name = logfile
+        self.file_name = log_file
         self.normal_termination = self._check_normal_termination()
         extra_output = self._pull_extra_output()
 
@@ -86,9 +86,11 @@ class GaussianLog():
             output, job_input = self._pull_end_output()
             output = output.split('\\')
 
-            # Remove job type and just parse from input line?
+            # Set job type.
             self.job_type = output[3]
             self.method, self.basis_set = output[4:6]
+
+            # Set molecule details.
             atom_number, elements, charge = parse_mol_formula(output[6])
             self.atom_number = atom_number
             self.elements = elements
@@ -200,7 +202,7 @@ class GaussianLog():
 
     def _pull_end_output(self):
         """
-        Pull sections of end job output from normally terminated log file.
+        Pull start sections of the end job output from normally terminated log file.
 
         Returns
         -------
@@ -215,17 +217,18 @@ class GaussianLog():
         section_count = 0
 
         with open(self.file_name, 'r') as infile:
-            line = next(infile)
-            # Skip to the end log:
-            while '1\\1\\' not in line:
-                line = next(infile)
-            # Pull the first two sections of end log ouput:
-            while section_count < 2:
-                section_count += ('\\\\' in line)
-                output += line.strip().lower()
-                line = next(infile)
+            
+            for line in infile:
+                if '1\\1\\' in line:
+                    # Pull the first two sections of end log ouput:
+                    while section_count < 2:
+                        section_count += ('\\\\' in line)
+                        output += line.strip().lower()
+                        line = next(infile)
 
-        return output.split('\\\\')[:2]
+                    break
+            return output.split('\\\\')[:2]
+
 
     def _pull_start_output(self):
         """
@@ -313,13 +316,14 @@ class GaussianLog():
             'Redundant internal coordinates'
             ]
 
-        # Iterate through file and pull final section
+        # Iterate through file to input geometry.
         with open(self.file_name, 'r') as infile:
             for line in infile:
                 if atom_id_flag in line:
                     line = next(infile)
                     if any(flag in line for flag in jump_line_flags):
                         line = next(infile)
+                    # Pull atom IDs.
                     for _ in range(self.atom_number):
                         atom_ids.append(line.split()[0][0])
                         line = next(infile)
