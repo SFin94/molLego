@@ -5,7 +5,7 @@ from .utils import readlines_reverse, parse_mol_formula
 
 
 # Dict mapping job type to the properties contained in the log file
-job_to_property = {
+__job_to_property__ = {
     'opt': ['energy', 'geom', 'opt'],
     'freq': ['energy', 'geom', 'thermo', 'opt'],
     'fopt': ['energy', 'geom', 'thermo', 'opt'],
@@ -14,14 +14,15 @@ job_to_property = {
     'scan_rigid': ['energy', 'geom']
     }
 
+    # Additional ones to add are trajectory; scan as property?
+
 # Dict of search flags in log file for each property
-property_flags = {
+__property_flags__ = {
     'energy': 'SCF Done',
     'geom': 'Standard orientation',
     'opt': 'Optimized Parameters',
     'thermo': 'Thermochemistry'
     }
-
 
 class GaussianLog():
     """
@@ -47,23 +48,19 @@ class GaussianLog():
     file_name : :class:`str`
         The path to the parent log file.
 
+    job_type : :class:`str`
+        The calculation type (opt, fopt, freq, sp, scan).
+
     method : :class:`str`
         The method of the calculation (functional, etc.).
+
+    normal_termination : :class:`Bool`
+        ``True`` if normal termination. Otherwise, ``False``.
 
     properties : :class:`dict`
         A :class:`dict`, where the key is a property type and the value
         is the corresponding string flag for parsing the property from
         the Gaussian log file.
-
-    job_type : :class:`str`
-        The type of the calculation (Opt, Fopt, Freq, SP, Scan).
-
-    normal_termination : :class:`Bool`
-        ``True`` if normal termination. Otherwise, ``False``.
-
-    spe : :class:`bool`
-        If ``True``, the calculation is a single point energy calculation.
-        Otherwise, the calculation is a result of an optimisation.
 
     """
 
@@ -79,14 +76,13 @@ class GaussianLog():
         """
         self.file_name = log_file
         self.normal_termination = self._check_normal_termination()
-        extra_output = self._pull_extra_output()
 
         # Use end of file log for normal termination:
         if self.normal_termination:
             output, job_input = self._pull_end_output()
             output = output.split('\\')
 
-            # Set job type.
+            # Set job details.
             self.job_type = output[3]
             self.method, self.basis_set = output[4:6]
 
@@ -96,13 +92,6 @@ class GaussianLog():
             self.elements = elements
             self.charge = charge
             self.atom_ids = self._pull_atom_ids()
-
-            # Set scan type.
-            if self.job_type.lower() == 'scan':
-                if extra_output['modredundant']:
-                    self.job_type = 'scan_relaxed'
-                else:
-                    self.job_type = 'scan_rigid'
 
             print(
                 'Normal termination output found, '
@@ -114,48 +103,16 @@ class GaussianLog():
             try:
                 job_input = self._pull_start_output()
                 
-                # Use flags to try to deduce the job type.
-                calculation_flags = {
-                    'opt': False,
-                    'freq': False,
-                    'scan': False,
-                    'mp2': False
-                    }
-                job_calculation_types = {
-                    'opt': [True, False, False],
-                    'fopt': [True, True, False],
-                    'freq': [False, True, False],
-                    'scan_rigid': [False, False, True]
-                    }
-
-                # Set calculation flag to True if present in job input.
-                for flag in calculation_flags.keys():
-                    if flag in output.lower():
-                        calculation_flags[flag] = True
-
-                # Set job type based on calculation bool results.
-                for job, calc_type in job_calculation_types.items():
-                    if calc_type == list(calculation_flags.values())[:-1]:
-                        self.job_type = job
-                        break
-
-                # If both scan and modredundant flags are true
-                # then job is a relaxed scan.
-                if all(extra_output.values()):
-                    self.job_type = 'scan_relaxed'
+                # Set job type from input line.
+                self.job_type = _job_from_input(job_input)
 
                 # Set MP2 as method if present for correct energy parsing
-                if calculation_flags['mp2']:
+                if 'mp2' in job_input:
                     self.method = 'mp2'
 
-                # Set number of atoms and atom ids
-                with open(self.file_name, 'r') as infile:
-                    for line in infile:
-                        if 'natoms' in line.lower():
-                            self.atom_number = int(line.split()[1])
-                            break
-                self.atom_ids = self._pull_atom_ids()
-
+                # Set number of atoms.
+                self.atom_number = pull_atom_number()
+               
                 print(
                     'Normal termination output not present, '
                     'fewer attributes set using input information.'
@@ -164,13 +121,20 @@ class GaussianLog():
             except:
                 print('Cannot parse the job information from the log file.')
 
-        # Set spe flag if single point and no optimisation.
-        self.spe = any([
-            (self.job_type.lower() == 'sp'),
-            (self.job_type.lower() == 'scan_rigid')
-            ])
+        # Set attributes using job input (independant of normal termination).
 
-        self.job_property_flags = self._pull_flags()
+        # Process moderedundant input is present in job input.
+        if 'modredundant' in job_input:
+            scan_input = self.pull_scan_input()
+            if scan_input:
+                self.job_type = 'scan_relaxed'
+        ### Would want to add ammendment to change rigid scan name from 'scan'
+
+        # Set atom IDs.
+        self.atom_ids = self._pull_atom_ids()
+
+        
+        # self.job_property_flags = self._pull_flags()
 
     def _check_normal_termination(self):
         """
@@ -186,19 +150,6 @@ class GaussianLog():
         next(end_line)
         return True if "Normal termination" in next(end_line) else False
 
-    def _pull_extra_output(self):
-        extra_info_flags = {
-            'modredundant': False,
-            'scan ': False
-            }
-
-        with open(self.file_name, 'r') as infile:
-            for line in infile:
-                for flag in extra_info_flags.keys():
-                    if flag in line.lower():
-                        extra_info_flags[flag] = True
-
-        return extra_info_flags
 
     def _pull_end_output(self):
         """
@@ -249,6 +200,45 @@ class GaussianLog():
                 line = next(infile)
         return output
 
+    def _job_from_input(self, job_input):
+        """
+        Set job type from job input.
+
+        Parameters
+        ----------
+        job_input: `str`
+            Job input line for calculation.
+        
+        Returns
+        -------
+        :class:`str`
+            The calculation type (opt, fopt, freq, sp, scan).
+            
+        """
+
+        # Use flags to try to deduce the job type.
+        calculation_flags = {
+            'opt': False,
+            'freq': False,
+            'scan': False,
+            }
+        job_calculation_types = {
+            'opt': [True, False, False],
+            'fopt': [True, True, False],
+            'freq': [False, True, False],
+            'scan_rigid': [False, False, True]
+            }
+
+        # Set calculation flag to True if present in job input.
+        for flag in calculation_flags.keys():
+            if flag in output.lower():
+                calculation_flags[flag] = True
+
+        # Set job type based on calculation bool results.
+        for job, calc_type in job_calculation_types.items():
+            if calc_type == list(calculation_flags.values())[:-1]:
+                return job
+
     def _pull_flags(self):
         """
         Convert the job type to flags for seeking information in the log file.
@@ -296,6 +286,26 @@ class GaussianLog():
 
         return job_property_flags
 
+
+    def pull_atom_number(self):
+        """
+        Pull the number of atoms from start of log file.
+
+        Alternative method to set them if not normal termination.
+
+        Returns
+        -------
+        :class:`int`
+            The number of atoms in the molecule.
+
+        """
+        # Iterate through file and pull number of atoms.
+        with open(self.file_name, 'r') as infile:
+            for line in infile:
+                if 'natoms' in line.lower():
+                    return int(line.split()[1])
+
+
     def _pull_atom_ids(self):
         """
         Pull the atom IDs from start of the log file.
@@ -325,6 +335,7 @@ class GaussianLog():
                     for _ in range(self.atom_number):
                         atom_ids.append(line.split()[0][0])
                         line = next(infile)
+                    break
 
         return atom_ids
 
@@ -573,43 +584,19 @@ class GaussianLog():
                     if opt_step_ind == len(opt_steps):
                         return mol_results
 
-    def _pull_modredundant(self, infile):
-        """
-        Pull modredundant input from the log file.
-
-        Parameters
-        ----------
-        infile : :class:`iter`
-            Lines of the log file.
-
-        Returns:
-        :class:`list of str`
-            List of all moredundant input lines from log file.
-
-        """
-        # Goes to start of modredundant section,
-        # then extracts all modredundant lines.
-        modred_input = []
-        current_line = next(infile)
-        while current_line.strip() != '':
-            modred_input.append(current_line.strip().split())
-            current_line = next(infile)
-        return modred_input
-
-    def _process_modredundant(self, modred_input):
+    def _process_scan_info(self, scan_input):
         """
         Process scan information from modredundant input.
 
         Parameters
         ----------
-        modred_input : :class:`list of list of str`
-            Unprocessed modredundant input lines from log file, as returned by
-            the `_pull_modredundant()` method.
+        scan_input : `str`
+            Unprocessed modredundant input line from log file.
 
         Returns
         -------
         :class:`dict`
-            Details of the scan in a format:
+            Details of the relaxed scan in a format:
             {
                 param_key : :class:`str`
                     '-' seperated atom id + index of all atoms in scan
@@ -621,18 +608,11 @@ class GaussianLog():
             }
 
         """
-        # Initialise variables
+        # Initialise variables.
         scan_info = {
             'param_key': '',
             'atom_inds': []
             }
-
-        # Locates scan input line from modredundant input
-        # by finding 'S' character
-        for modred_line in modred_input:
-            if 'S' in modred_line:
-                scan_input = modred_line
-                break
 
         # Process scan information from modredundant input
         scan_info['num_steps'] = int(scan_input[-2])
@@ -648,11 +628,12 @@ class GaussianLog():
 
         return scan_info
 
-    def get_scan_info(self):
+    def pull_scan_input(self):
         """
-        Get the scan information for relaxed scan from a log file.
+        Pull relaxed scan information from a log file.
 
-        Returns:
+        Returns
+        -------
         :class:`dict`
             Scan information in the form:
                 {
@@ -666,18 +647,23 @@ class GaussianLog():
             }
 
         """
-        # Set modredundant information flag
+        # Set modredundant input flag.
+        scan_input = False
         modred_flag = 'The following ModRedundant input section has been read:'
 
-        # Iterate over file and pull modredundant section
+        # Iterate over file and pull modredundant section.
         with open(self.file_name, 'r') as infile:
             for line in infile:
                 if modred_flag in line:
-                    modred_input = self._pull_modredundant(infile)
+                    modred_line = next(infile)
+                    while modred_line.strip():
+                        if 'S' in modred_line:
+                            scan_input = self._process_scan_info(modred_line)
+                        modred_line = next(infile)
+                    
                     break
-
-        # Process scan information from logfile modredundant input
-        return self._process_modredundant(modred_input)
+        return scan_input
+        
 
     def _pull_rigid_scan(self, infile):
         """
