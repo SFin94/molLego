@@ -20,7 +20,7 @@ class Molecule():
 
     '''
 
-    def __init__(self, input_file, mol_energy, mol_geom, atom_ids, optimised=False):
+    def __init__(self, input_file, mol_energy, mol_geom, atom_ids, optimised=False, charge=0):
 
         self.file_name = input_file
         self.escf = mol_energy
@@ -28,6 +28,7 @@ class Molecule():
         self.atom_number = len(atom_ids)
         self.geom = mol_geom
         self.optimised = optimised
+        self.charge = charge
 
     def set_parameters(self, parameters, gauss_index=False):
         """

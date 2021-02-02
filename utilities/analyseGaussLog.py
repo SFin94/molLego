@@ -781,3 +781,16 @@ class GaussianLog():
                     return int(line.split()[-1])
 
 
+    def pull_dipole_moment(self):
+        """Sets x, y, z and total dipole moment."""
+        with open(self.file_name, 'r') as input:
+            for line in input:
+                if 'Dipole moment' in line:
+                    input_line = input.__next__().split()
+                    dipole_components = [float(input_line[i]) for i in range(1,7,2)]
+                    dipole_total = float(input_line[-1])
+
+        return dipole_components, dipole_total
+
+
+        
