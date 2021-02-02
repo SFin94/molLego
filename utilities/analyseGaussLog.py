@@ -808,3 +808,40 @@ class GaussianLog():
                     break
 
         return self._process_rigid_scan(variables, initial_zmat)
+
+
+    def pull_multiplicity(self):
+        """
+        Pull the multiplicity from log file.
+        
+        Returns
+        -------
+        :class:`int` - multipliicity of molecule.
+        
+        """
+        # Iterate over file and pull modredundant section.
+        with open(self.file_name, 'r') as infile:
+            for line in infile:
+                if 'multiplicity' in line.lower():
+                    return int(line.split()[-1])
+
+
+    def pull_dipole_moment(self):
+        """
+        Pull x, y, z components and total of dipole moment from log file.
+
+        Returns
+        -------
+        :class:`numpy.ndarray`
+            A ``(1, 4)`` array of x, y, z components and 
+            the total dipole moment of the molecule.
+        
+        """
+        # Iterate over file and pull modredundant section.
+        with open(self.file_name, 'r') as infile:
+            for line in infile:
+                if 'Dipole moment' in line:
+                    input_line = infile.__next__().split()
+                    return np.asarray([float(input_line[i]) 
+                                       for i in range(1,9,2)])
+
