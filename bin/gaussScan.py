@@ -10,7 +10,7 @@ Parse scan results from gaussian relaxed scan log file(s) to a dataframe (csv) a
 
 Uses argparse for CL arguments
     Usage:"usage: %(prog)s [input_files] [args]"
-    
+
 Where:
     input_files: `str`
         Path/s to Gaussian log files (if multiple, same scan parameter across all); OR csv file with previous dataframe in [NB: if csv then scan parameter needs to be specified]
@@ -60,14 +60,14 @@ if __name__ == '__main__':
     else:
         scan_molecules, scan_info = ml.init_scan(*input_files, tracked_params=args.track_param_file)
 
-        # Set scan parameter/s from scan info 
+        # Set scan parameter/s from scan info
         if 'param_key' in scan_info.keys():
             scan_parameter = [scan_info['param_key']]
         else:
             scan_parameter = []
             for scan in scan_info.values():
                 scan_parameter.append(scan['param_key'])
-    
+
         # Set PES plot dimensionality from number of scan parameters
         args.plot = len(scan_parameter)
 

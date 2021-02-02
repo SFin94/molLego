@@ -34,7 +34,7 @@ def construct_mols(system_file):
         if line[0] != '#':
             mol_names.append(line.split()[0])
             mol_files.append(line.split()[1].split(','))
-            
+
             # Create Molecule or MoleculeThermo object from the input file(s) in each entry of the .conf file
             mols.append(molecules.init_mol_from_log(mol_files[-1][0]))
             for extra_file in mol_files[-1][1:]:
@@ -43,10 +43,9 @@ def construct_mols(system_file):
 
     return mol_names, mols
 
-
 def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
 
-    '''Function which creates a dataframe for all of the molecules and can write to a csv
+    """Function which creates a dataframe for all of the molecules and can write to a csv
 
     Parameters:
      mols: list of Molecule or MoleculeThermo objects - instances for each molecule
@@ -56,7 +55,7 @@ def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
 
     Returns:
      molecule_df: pandas dataframe - dataframe of all molecules with realtive quantities calcualted
-    '''
+    """
 
     # Create a dataframe of molecule attributes depending on object type (Molecule or MoleculeThermo)
     data = []
@@ -90,7 +89,7 @@ def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
 
 def parse_tracked_params(system_file):
 
-    '''Function which parses any additional parameters to be tracked from an input file
+    """Function which parses any additional parameters to be tracked from an input file
 
         Input:
          system_file: str - name of input .txt file which contains any additional parameters to be tracked across the scan [indexes are expected to be the gaussian indexes]
@@ -103,7 +102,7 @@ def parse_tracked_params(system_file):
          tracked_params: dict:
                          key: str - param_name
                          value: list of ints - [atom_indexes]
-    '''
+    """
 
     # Initialise empty dict for params
     tracked_params = {}
@@ -118,7 +117,7 @@ def parse_tracked_params(system_file):
 
 def init_scan(*args, tracked_params=None):
 
-    '''Function that generates a list of molecule objects from a scan file
+    """Function that generates a list of molecule objects from a scan file
 
     Parameters:
      args: str - gaussian log files of scan results
@@ -126,7 +125,7 @@ def init_scan(*args, tracked_params=None):
 
     Returns:
      scan_molecules: List of Molecule objects for each step of scan
-    '''
+    """
 
     # Inititalise variables
     scan_molecules = []
@@ -144,28 +143,28 @@ def init_scan(*args, tracked_params=None):
 
         # Get scan info - depending if rigid or relaxed scan
         if scan_file.job_type == 'scan_relaxed':
-            scan_info = scan_file.set_scan_info()
+            scan_info = scan_file.get_scan_info()
             # Set scan parameter in parameters dict and range of opt steps in file
             parameters[scan_info['param_key']] = scan_info['atom_inds']
             opt_steps = list(range(1, scan_info['num_steps']+2))
         else:
             # If rigid scan then needs more processing as potentially has mutltiple scan parameters
-            scan_info = scan_file.set_rigid_scan_info()
+            scan_info = scan_file.get_rigid_scan_info()
             total_scan_steps = 1
             # Set scan parameters in parameters dict and range of opt steps in file
             for scan_parameter in list(scan_info.values()):
                 parameters[scan_parameter['param_key']] = scan_parameter['atom_inds']
                 total_scan_steps *= (scan_parameter['num_steps'] + 1)
             opt_steps = list(range(1, total_scan_steps+1))
-        
+
         scan_molecules += molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
 
-    return scan_molecules, scan_info      
+    return scan_molecules, scan_info
 
 
 def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
 
-    '''Function to process a dataframe of molecules to plot and calculates relative E SCF (kJ/mol) or Relative E/G/H if thermodynamic properties given
+    """Function to process a dataframe of molecules to plot and calculates relative E SCF (kJ/mol) or Relative E/G/H if thermodynamic properties given
 
         Parameters:
          mols_data_full: pandas DataFrame - full dataframe for molecules
@@ -175,7 +174,7 @@ def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
 
         Returns:
          mols_data: pandas DataFrame - dataframe of the molecules to plot with relative (E SCF)/(E/G/H) columns for plotting
-    '''
+    """
 
     # Subset amount of data frame to plot
     if mols_to_plot != None:
@@ -201,7 +200,7 @@ def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
 
 def sum_mols(*args):
 
-    '''Function that adds two molecules together to creat a new one, e.g. for a reactant or product set
+    """Function that adds two molecules together to creat a new one, e.g. for a reactant or product set
 
     Parameters:
      args: Molecule objects - the molecules to be added
@@ -209,7 +208,7 @@ def sum_mols(*args):
     Returns:
      new_mol - ::class:: object for a molecule
 
-    '''
+    """
 
     # Set sums for quantities and empty lists.
     escf_sum = 0.0
@@ -222,7 +221,7 @@ def sum_mols(*args):
         thermo = True
         # Thermo sums in order of e, h, g, s, zpe - should proabbly make as dict for consistency with other methods.
         thermo_sums = [0.0, 0.0, 0.0, 0.0, 0.0]
-    
+
     # Add values for each molecule to quantity sums
     for mol in args:
 
@@ -256,34 +255,40 @@ def sum_mols(*args):
     return new_mol
 
 def process_input_file(input_file):
-
-    '''Function that processes the input file, if a conf file is given then the molecules are processed, creating Molecule/MoleculeThermo objects for each enetry in the conf file and converting to a DataFrame. If a csv file is given then the molecule DataFrame is parsed directly from the csv file
+    """
+    Process an input file to Molecule Objects and/or a DataFrame.
     
-    Parameters:
-     input_file: str - file name which should have either a .conf or .csv extension
-
-    Returns:
-     mol_df: pd DataFrame - dataframe with all the molecule information in 
-     [optional returns if .conf file is the input file type]
-     molecules: list of Molecule/MoleculeThermo objects - created Molecule objects for each entry line in the conf file
-
-    '''
+    If a .conf file is given the Molecule objects are processed for each entry in the .conf file.
+    If a .csv file then the information is parsed directly into a moleucle DataFrame.
     
-    # Retrieve file type for input file
+    Parameters
+    ----------
+    input_file: `str`
+        File name with file type of: .conf or .csv
+
+    Returns
+    -------
+    mol_df: pandas DataFrame`
+        Molecule information and properties.
+    molecules: `list of Molecule object`
+        Molecule objects for each entry line in .conf file.
+        [Only returned if input file type is conf.
+    
+    """
+    # Retrieve file type for input file.
     file_type = str(input_file.split('.')[-1])
 
-    # Process conf file, creating Molecule objects and a DataFrame
+    # Process conf file, creating Molecule objects and a DataFrame.
     if file_type == 'conf':
+        mol_names, molecules = construct_mols(input_file)
+        mol_df = mols_to_dataframe(molecules, mol_names=mol_names)
+        return mol_df, molecules
 
-        mol_names, mols = construct_mols(input_file)
-        mol_df = mols_to_dataframe(mols, mol_names=mol_names)
-        return mol_df, mols
-
-    # Parse in existing dataframe and set first column (mol_names) as index
+    # Parse in existing dataframe and set first column (mol_names) as index.
     elif file_type == 'csv':
-        mol_df = pd.read_csv(input_file, index_col=0) 
+        mol_df = pd.read_csv(input_file, index_col=0)
         return mol_df
-    
-    # Raise exception if file type is not recognised
+
+    # Raise exception if file type is not recognised.
     else:
         raise Exception('File extension not recognised (should be .conf or .csv)')
