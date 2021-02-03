@@ -56,13 +56,8 @@ class GaussianLog():
     normal_termination : :class:`Bool`
         ``True`` if normal termination. Otherwise, ``False``.
 
-    properties : :class:`dict`
-        A :class:`dict`, where the key is a property type and the value
-        is the corresponding string flag for parsing the property from
-        the Gaussian log file.
-
     """
-
+    
     def __init__(self, log_file):
         """
         Initialise from Gaussian log file.
@@ -82,7 +77,7 @@ class GaussianLog():
             output = output.split('\\')
 
             # Set job details.
-            self.job_type = output[3]
+            # self.job_type = output[3]
             self.method, self.basis_set = output[4:6]
 
             # Set molecule details.
@@ -111,29 +106,25 @@ class GaussianLog():
 
                 # Set number of atoms.
                 self.atom_number = pull_atom_number()
-               
+
                 print(
                     'Normal termination output not present, '
                     'fewer attributes set using input information.'
                     )
-
             except:
                 print('Cannot parse the job information from the log file.')
 
         # Set attributes using job input (independant of normal termination).
+        self.job_type = self._job_from_input(job_input)
 
         # Process moderedundant input is present in job input.
         if 'modredundant' in job_input:
             scan_input = self.pull_scan_input()
             if scan_input:
                 self.job_type = 'scan_relaxed'
-        ### Would want to add ammendment to change rigid scan name from 'scan'
 
         # Set atom IDs.
         self.atom_ids = self._pull_atom_ids()
-
-        
-        # self.job_property_flags = self._pull_flags()
 
     def _check_normal_termination(self):
         """
@@ -149,7 +140,6 @@ class GaussianLog():
         next(end_line)
         return True if "Normal termination" in next(end_line) else False
 
-
     def _pull_end_output(self):
         """
         Pull start sections of the end job output from normally terminated log file.
@@ -158,7 +148,7 @@ class GaussianLog():
         -------
         output : `list of str`
             Unprocessed lines from end job output.
-            First entry is caclulation information.
+            First entry is calculation information.
             Second entry is the job input line.
 
         """
@@ -224,17 +214,18 @@ class GaussianLog():
             'opt': [True, False, False],
             'fopt': [True, True, False],
             'freq': [False, True, False],
-            'scan_rigid': [False, False, True]
+            'scan_rigid': [False, False, True],
+            'sp': [False, False, False]
             }
 
         # Set calculation flag to True if present in job input.
         for flag in calculation_flags.keys():
-            if flag in output.lower():
+            if flag in job_input.lower():
                 calculation_flags[flag] = True
 
         # Set job type based on calculation bool results.
         for job, calc_type in job_calculation_types.items():
-            if calc_type == list(calculation_flags.values())[:-1]:
+            if calc_type == list(calculation_flags.values()):
                 return job
 
     def _pull_flags(self):
@@ -473,10 +464,6 @@ class GaussianLog():
             line = next(input)
         thermochemistry['ZPE'] = float(line[50:58])
 
-        # Optional section if thermal corrections to E, H, G wanted
-        # thermal_corrections = [float(next(input)[50:58]) for i in range(3)]
-        # return thermal_corrections
-
         # Set the thermally corrected E, H, G.
         [next(input) for x in range(0, 4)]
         for quantity in quantities[2:-1]:
@@ -611,8 +598,9 @@ class GaussianLog():
             'param_key': '',
             'atom_inds': []
             }
-
+        
         # Process scan information from modredundant input
+        scan_input = scan_input.split()
         scan_info['num_steps'] = int(scan_input[-2])
         scan_info['step_size'] = float(scan_input[-1])
 
@@ -623,7 +611,7 @@ class GaussianLog():
             scan_info['atom_inds'].append(int(i) - 1)
             scan_info['param_key'] += (f'{self.atom_ids[int(i)-1]}{i}-')
         scan_info['param_key'] = scan_info['param_key'][:-1]
-
+        
         return scan_info
 
     def pull_scan_input(self):
