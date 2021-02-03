@@ -199,11 +199,11 @@ def plot_mols_thermo(mol_data, save=None, mol_labels=None, enthalpy=False):
                    color=h_colour, s=70, label='$\Delta$H')
 
     # Set labels and axis settings
-    if labels == None:
-        labels = list(mol_data.index)
+    if mol_labels == None:
+        mol_labels = list(mol_data.index)
 
     ax.tick_params(labelsize=10)
-    ax.set_xticklabels(labels, rotation=15, fontsize=11)
+    ax.set_xticklabels(mol_labels, rotation=15, fontsize=11)
     ax.set_ylabel('Relative E/G (kJmol$^{-1}$)', fontsize=11)
     ax.set_xlabel('Molecule', fontsize=11)
     ax.legend(frameon=False, loc=1)
@@ -418,9 +418,9 @@ def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None,
 
             # Plot labels with dataframe index and energy label.
             if label == True:
-                step_label = reac_path_data.index.values[rstep_ind] + \
-                             '\n(' + str(int(reac_path_data[
-                             quantity_col].iloc[rstep_ind])) + ')'
+                step_label = (reac_path_data.index.values[rstep_ind] 
+                              + '\n(' + str(int(reac_path_data[
+                              quantity_col].iloc[rstep_ind])) + ')')
                 ax.text(reac_path_data['Rx'].iloc[rstep_ind], 
                         reac_path_data[quantity_col].iloc[rstep_ind]+6, 
                         step_label, color=colour[p_ind], fontsize=11, 
@@ -428,9 +428,9 @@ def plot_reaction_profile(reaction_data, quantity_col='Relative G', save=None,
         
         # Plot labels of reactants.
         if label == True:
-            reactant_label = reac_path_data.index.values[0] + \
-                             '\n(' + str(int(reac_path_data[
-                             quantity_col].iloc[0])) + ')'
+            reactant_label = (reac_path_data.index.values[0] 
+                              + '\n(' + str(int(reac_path_data[
+                              quantity_col].iloc[0])) + ')')
             ax.text(reac_path_data['Rx'].iloc[0], 
                     reac_path_data[quantity_col].iloc[0]+6, 
                     reactant_label, color=colour[p_ind], 
@@ -503,7 +503,6 @@ def set_mol_colours(mol_data, energy_col):
     # Calculate normalised energy to plot colour by if given.
     if energy_col != None:
         mol_data['Norm E'] = mol_data[energy_col]/mol_data[energy_col].max()
-        # colmap = sns.cubehelix_palette(start=2.5, rot=.5, dark=0, light=0.5, as_cmap=True)
         colmap = sns.cubehelix_palette(as_cmap=True)
         for val in mol_data['Norm E']:
             colours = [colmap(val)[:3] for val in mol_data['Norm E']]
@@ -543,7 +542,8 @@ def plot_mols_radar(mol_data, geom_params, save=None,
 
     # Calculate angles to plot, set parameter list
     num_params = len(geom_params.keys())
-    plot_angles = [n / float(num_params) * 2 * np.pi for n in range(num_params)]
+    plot_angles = [n / float(num_params) * 2 * np.pi 
+                   for n in range(num_params)]
     plot_angles += plot_angles[:1]
 
     # Normalise molecule parameters.
@@ -627,8 +627,8 @@ def plot_mol_map(mol_data, geom_params, save=None,
     ax.set_ylim(ymin=0.0, ymax=1.0)
 
     # Set legend.
-    ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, frameon=False, 
-              handletextpad=0.1, fontsize=9)
+    ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.04), ncol=3, 
+              frameon=False, handletextpad=0.1, fontsize=9)
     plt.tight_layout(rect=[0, 0, 1, 0.97])
 
     if save != None:
