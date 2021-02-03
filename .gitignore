@@ -1,9 +1,7 @@
 *.py[co]
 __pycache__/
-testFuncs.py
 *.csv
 dist
 molLego.egg-info
-tests/*
 *.DS_Store
 **/.vscode
