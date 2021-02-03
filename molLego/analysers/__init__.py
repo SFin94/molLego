@@ -1,1 +1,1 @@
-from analyse_gaussian import *
+from .analyse_gaussian import *
