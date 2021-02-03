@@ -1,4 +1,4 @@
 from .geom import *
-from .analyseGaussLog import *
-from .plotFrames import *
-from .reactionPaths import *
+from .plot_frames import *
+from .reaction_paths import *
+from .utils import *

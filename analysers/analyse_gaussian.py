@@ -1,8 +1,7 @@
 """Module containing parsing functions for G16 log files."""
 
 import numpy as np
-from .utils import readlines_reverse, parse_mol_formula
-
+from molLego.utilities.utils import readlines_reverse, parse_mol_formula
 
 # Dict mapping job type to the properties contained in the log file
 __job_to_property__ = {
@@ -157,7 +156,7 @@ class GaussianLog():
 
         Returns
         -------
-        output: `list of str`
+        output : `list of str`
             Unprocessed lines from end job output.
             First entry is caclulation information.
             Second entry is the job input line.
@@ -185,7 +184,7 @@ class GaussianLog():
 
         Returns
         -------
-        output: `str`
+        output : `str`
             Calculation input line.
 
         """
@@ -206,7 +205,7 @@ class GaussianLog():
 
         Parameters
         ----------
-        job_input: `str`
+        job_input : `str`
             Job input line for calculation.
         
         Returns
@@ -215,7 +214,6 @@ class GaussianLog():
             The calculation type (opt, fopt, freq, sp, scan).
             
         """
-
         # Use flags to try to deduce the job type.
         calculation_flags = {
             'opt': False,
@@ -269,7 +267,7 @@ class GaussianLog():
             'thermo': 'Thermochemistry'
             }
 
-        # Try to pull the correct property flags
+        # Set parser search  the correct property flags
         try:
             flag_keys = job_to_property[self.job_type.lower()]
             job_property_flags = {

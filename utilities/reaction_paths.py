@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-import molLego.molecules.molRoutes as molroutes
+import molLego.molecules.mol_routes as molroutes
 
 def track_reaction_path(current_step, adjacency, current_path=[]):
     """

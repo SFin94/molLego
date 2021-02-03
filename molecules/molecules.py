@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 
-import molLego.utilities.analyseGaussLog as glog
+import molLego.analysers.analyse_gaussian as agauss
 import molLego.utilities.geom as geom
 
 """
@@ -144,7 +144,7 @@ def init_mol_from_log(logfile, opt_steps=None, parameters=None):
     """
 
     # Initialise class for log file - sets properties of the calculations to parse
-    job = glog.GaussianLog(logfile)
+    job = agauss.GaussianLog(logfile)
     molecules = []
 
     # Parse all properties for the calculation type

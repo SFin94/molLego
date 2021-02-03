@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-import molLego.utilities.analyseGaussLog as glog
+import molLego.analysers.analyse_gaussian as agauss
 import molLego.utilities.geom as geom
 import molLego.molecules.molecules as molecules
 
@@ -139,7 +139,7 @@ def init_scan(*args, tracked_params=None):
     for i, input_file in enumerate(args):
 
         # Initialise gaussian log file object
-        scan_file = glog.GaussianLog(input_file)
+        scan_file = agauss.GaussianLog(input_file)
 
         # Get scan info - depending if rigid or relaxed scan
         if scan_file.job_type == 'scan_relaxed':
