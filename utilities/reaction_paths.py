@@ -45,12 +45,12 @@ def construct_reaction_path(conf_file):
 
     Parameters
     ----------
-    conf_file: `str`
+    conf_file : `str`
         Reaction .conf file
 
     Returns
     -------
-    path_list: `nested list`
+    path_list : `nested list`
         List of reaction steps for each reaction path.
 
     """
@@ -105,28 +105,32 @@ def construct_reaction_path(conf_file):
     
     return reaction_paths
 
-def construct_reaction_profile(reaction_steps_data, reaction_paths, path_min=None, quantity=None, save=None):
+def construct_reaction_profile(reaction_steps_data, reaction_paths, 
+                               path_min=None, quantity=None, save=None):
     """
     Construct reaction profile data for reaction paths.
 
     Parameters
     ----------
-    reaction_steps_data: :pandas:`DataFrame`
-        Molecule data for all unordered reaction steps involved in reaction profile.
+    reaction_steps_data : :pandas:`DataFrame`
+        Molecule data for all unordered reaction steps involved in 
+        reaction profile.
     reaction_paths: `nested lists`
         List of reaction steps for each reaction path.
     path_min: `list`
-        Reaction step to be taken as 'zero' for realtive thermodynamic quantities.
-        One for each path. If None, uses lowest valued reaction step [default: None].
+        Reaction step to be taken as 'zero' for relative thermodynamic 
+        quantities. One for each path. 
+        [default: None] If None, uses lowest valued reaction step.
 
     Returns
     -------
     reaction_profile_data: :pandas:`DataFrame`
-        Molecule data and realative quantities for each reaction path in reaction profile.
+        Molecule data and realative quantities for each reaction path 
+        in reaction profile.
 
     """
     reaction_profile_data = pd.DataFrame()
-    # Process path minimum input to allow for a minimun for each reaction path to be specified
+    # Set no path minimum for each reaction path.
     if path_min == None:
         path_min = [None]*len(reaction_paths)
 
@@ -135,9 +139,10 @@ def construct_reaction_profile(reaction_steps_data, reaction_paths, path_min=Non
         # Calculate reaction coordinates.
         reac_coord = np.linspace(0, 1, len(reaction_paths))
         
-        # Want to subset dataframe with path names.
+        # Subset dataframe with path names.
         rpath_data = reaction_steps_data.loc[rpath].copy()
-        rpath_data = molroutes.calc_relative(rpath_data, quantities=quantity, min=path_min[i])
+        rpath_data = molroutes.calc_relative(rpath_data, quantities=quantity, 
+                                             min=path_min[i])
         
         # Add reaction coordinate and path number as column.
         rpath_data['Reaction path'] = i
