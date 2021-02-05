@@ -23,6 +23,9 @@ __property_flags__ = {
     'thermo': 'Thermochemistry'
     }
 
+class LogFileError(Exception):
+    """Rasied when error in reading log file."""
+
 class GaussianLog():
     """
     Represents a Gaussian log file.
@@ -96,23 +99,22 @@ class GaussianLog():
         else:
             try:
                 job_input = self._pull_start_output()
-                
-                # Set job type from input line.
-                self.job_type = _job_from_input(job_input)
-
+            
                 # Set MP2 as method if present for correct energy parsing
                 if 'mp2' in job_input:
                     self.method = 'mp2'
 
                 # Set number of atoms.
-                self.atom_number = pull_atom_number()
-
+                self.atom_number = self.pull_atom_number()
+                
                 print(
                     'Normal termination output not present, '
                     'fewer attributes set using input information.'
                     )
             except:
-                print('Cannot parse the job information from the log file.')
+                raise LogFileError(
+                    'Cannot parse job information from the log file.'
+                    )
 
         # Set attributes using job input (independant of normal termination).
         self.job_type = self._job_from_input(job_input)
@@ -268,13 +270,11 @@ class GaussianLog():
             print('Job type is not recognised')
 
         # Switch energy flag if method is MP2.
-        # Extra handle in case method was not parsed
         if (hasattr(self, 'method')):
             if ('mp2' in self.method.lower()):
                 job_property_flags['energy'] = 'EUMP2'
 
         return job_property_flags
-
 
     def pull_atom_number(self):
         """
@@ -293,7 +293,6 @@ class GaussianLog():
             for line in infile:
                 if 'natoms' in line.lower():
                     return int(line.split()[1])
-
 
     def _pull_atom_ids(self):
         """
@@ -837,7 +836,8 @@ class GaussianLog():
             for line in infile:
                 if 'Dipole moment' in line:
                     input_line = infile.__next__().split()
-                    return np.asarray([float(input_line[i]) 
+                    dipole = np.asarray([float(input_line[i]) 
                                        for i in range(1,9,2)])
+        return dipole
 
         
