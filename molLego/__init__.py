@@ -1,3 +1,3 @@
 from .utilities import *
-from .analysers import *
+from .parsers import *
 from .molecules import *

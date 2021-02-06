@@ -1,6 +1,7 @@
 """Module containing parsing functions for G16 log files."""
 
 import numpy as np
+from molLego.parsers.parser import Parser
 from molLego.utilities.utils import readlines_reverse, parse_mol_formula
 
 # Dict mapping job type to the properties contained in the log file
@@ -26,7 +27,7 @@ __property_flags__ = {
 class LogFileError(Exception):
     """Rasied when error in reading log file."""
 
-class GaussianLog():
+class GaussianLog(Parser):
     """
     Represents a Gaussian log file.
 
@@ -61,17 +62,17 @@ class GaussianLog():
 
     """
     
-    def __init__(self, log_file):
+    def __init__(self, output_file):
         """
-        Initialise from Gaussian log file.
+        Initialise from Gaussian output log file.
 
         Parameters
         ----------
-        log_file : :class:`str`
+        output_file : :class:`str`
             The name/path to the parent log file.
 
         """
-        self.file_name = log_file
+        self.file_name = output_file
         self.normal_termination = self._check_normal_termination()
 
         # Use end of file log for normal termination:
@@ -230,7 +231,7 @@ class GaussianLog():
             if calc_type == list(calculation_flags.values()):
                 return job
 
-    def _pull_flags(self):
+    def _get_search_flags(self):
         """
         Convert the job type to flags for seeking information in the log file.
 
@@ -242,29 +243,11 @@ class GaussianLog():
             the Gaussian log file.
 
         """
-        # Dict mapping job type to the properties contained in the log file
-        job_to_property = {
-            'opt': ['energy', 'geom', 'opt'],
-            'freq': ['energy', 'geom', 'thermo', 'opt'],
-            'fopt': ['energy', 'geom', 'thermo', 'opt'],
-            'sp': ['energy', 'geom'],
-            'scan_relaxed': ['energy', 'geom', 'opt'],
-            'scan_rigid': ['energy', 'geom']
-            }
-
-        # Dict of search flags in log file for each property
-        property_flags = {
-            'energy': 'SCF Done',
-            'geom': 'Standard orientation',
-            'opt': 'Optimized Parameters',
-            'thermo': 'Thermochemistry'
-            }
-
-        # Set parser search  the correct property flags
+        # Set parser search flags from the job type.
         try:
-            flag_keys = job_to_property[self.job_type.lower()]
+            flag_keys = __job_to_property__[self.job_type.lower()]
             job_property_flags = {
-                prop: property_flags[prop] for prop in flag_keys
+                prop: __property_flags__[prop] for prop in flag_keys
                 }
         except KeyError:
             print('Job type is not recognised')
@@ -275,24 +258,6 @@ class GaussianLog():
                 job_property_flags['energy'] = 'EUMP2'
 
         return job_property_flags
-
-    def pull_atom_number(self):
-        """
-        Pull the number of atoms from start of log file.
-
-        Alternative method if not normal termination.
-
-        Returns
-        -------
-        :class:`int`
-            The number of atoms in the molecule.
-
-        """
-        # Iterate through file and pull number of atoms.
-        with open(self.file_name, 'r') as infile:
-            for line in infile:
-                if 'natoms' in line.lower():
-                    return int(line.split()[1])
 
     def _pull_atom_ids(self):
         """
@@ -498,13 +463,13 @@ class GaussianLog():
 
         """
         if property == 'energy':
-            return self.spe
+            return (self.job_type == 'sp')
         elif property == 'opt':
-            return (not self.spe)
+            return (self.job_type != 'sp')
         else:
             return False
 
-    def get_properties(self, opt_steps=[1]):
+    def get_properties(self, opt_steps=None):
         """
         Get properties from the log file.
 
@@ -540,8 +505,10 @@ class GaussianLog():
             'opt': self._pull_optimised
             }
 
+        job_property_flags = self._get_search_flags()
+
         # Set alternate flag if MP2 energy.
-        if self.job_property_flags['energy'] == 'EUMP2':
+        if job_property_flags['energy'] == 'EUMP2':
             pull_functions['energy'] = self._pull_mp2_energy
 
         # Set opt count to 2 if fopt calculation
@@ -553,7 +520,7 @@ class GaussianLog():
         with open(self.file_name, 'r') as infile:
             for line in infile:
                 # Check for property in the line and set property value.
-                for prop, flag in self.job_property_flags.items():
+                for prop, flag in job_property_flags.items():
                     if flag in line:
                         step_result[prop] = pull_functions[prop](infile, line)
                         opt_count += self._update_opt_count(prop)
@@ -793,16 +760,23 @@ class GaussianLog():
 
         return self._process_rigid_scan(variables, initial_zmat)
 
-    def pull_dipole_moment(self):
-        """Sets x, y, z and total dipole moment."""
-        with open(self.file_name, 'r') as input:
-            for line in input:
-                if 'Dipole moment' in line:
-                    input_line = input.__next__().split()
-                    dipole_components = [float(input_line[i]) for i in range(1,7,2)]
-                    dipole_total = float(input_line[-1])
+    def pull_atom_number(self):
+        """
+        Pull the number of atoms from start of log file.
 
-        return dipole_components, dipole_total
+        Alternative method if not normal termination.
+
+        Returns
+        -------
+        :class:`int`
+            The number of atoms in the molecule.
+
+        """
+        # Iterate through file and pull number of atoms.
+        with open(self.file_name, 'r') as infile:
+            for line in infile:
+                if 'natoms' in line.lower():
+                    return int(line.split()[1])
 
     def pull_multiplicity(self):
         """
@@ -818,7 +792,6 @@ class GaussianLog():
             for line in infile:
                 if 'multiplicity' in line.lower():
                     return int(line.split()[-1])
-
 
     def pull_dipole_moment(self):
         """
@@ -839,5 +812,29 @@ class GaussianLog():
                     dipole = np.asarray([float(input_line[i]) 
                                        for i in range(1,9,2)])
         return dipole
+
+    def pull_trajectory(self):
+        """
+        Pull E and geometry of optimisation trajectory.
+
+        Returns
+        -------
+        
+
+        """
+        opt_traj = []
+
+        with open(self.file_name, 'r') as infile:
+            for line in infile:
+
+
+        pull_functions = {
+            'energy': self._pull_energy,
+            'geom': self._pull_geometry,
+
+        opt_traj.append(
+            
+            
+            (input_file, line, atom_number))
 
         
