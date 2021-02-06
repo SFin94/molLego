@@ -1,11 +1,4 @@
 """Module containing parent parser class."""
-
-import numpy as np
-from molLego.utilities.utils import readlines_reverse, parse_mol_formula
-
-# class OutputFileError(Exception):
-    # """Rasied when error in reading log file."""
-
 class OutputParser():
     """
     Parser base class for calculation output file.
@@ -34,7 +27,7 @@ class OutputParser():
         ``True`` if normal termination. Otherwise, ``False``.
 
     """
-    "INIT NEEDED?"
+    
     def __init__(self, output_file):
         raise NotImplementedError
 
