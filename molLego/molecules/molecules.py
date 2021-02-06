@@ -8,6 +8,8 @@ import molLego.utilities.geom as geom
 Script containing class definitions for base class Molecule and sub class Thermomolecule
 """
 
+__ATOM_TYPES__ = ['h',  'he', 'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne', 'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar', 'k',  'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr', 'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag', 'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe', 'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w',  're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn', 'fr', 'ra', 'ac', 'th', 'pa', 'u', 'np', 'pu']
+
 class Molecule():
 
     """
@@ -80,11 +82,8 @@ class Molecule():
          atom_indexes: :class:`list` - atom ids as str entry
 
         """
-
-        # List of atoms - index matches atomic mass - 1
-        atom_id_index = ['h',  'he', 'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne', 'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar', 'k',  'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr', 'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag', 'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe', 'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w',  're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn', 'fr', 'ra', 'ac', 'th', 'pa', 'u', 'np', 'pu']
-
-        self.atom_indexes = [int(atom_id_index.index(i.lower()))+1 for i in self.atom_ids]
+        
+        self.atom_indexes = [int(__ATOM_TYPES__.index(i.lower()))+1 for i in self.atom_ids]
 
 
     def reindex_molecule(self, reindex):
@@ -160,7 +159,7 @@ def init_mol_from_log(logfile, opt_steps=None, parameters=None):
         try:
             # Process dict of thermochemistry results to pass ZPE, thermally corrected E, H, G and TS to init
             molecule = MoleculeThermo(job.file_name, mol['energy'], mol['geom'], job.atom_ids, mol['opt'], zpe=mol['thermo']['ZPE'], e=mol['thermo']['E'], h=mol['thermo']['H'], g=mol['thermo']['G'], s=mol['thermo']['S'])
-        else:
+        except:
             # Check if opt set or not
             if job.spe == False:
                 molecule = Molecule(job.file_name, mol_energy=mol['energy'], mol_geom=mol['geom'], atom_ids=job.atom_ids, optimised=mol['opt'])
