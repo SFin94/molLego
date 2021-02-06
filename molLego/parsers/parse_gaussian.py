@@ -1,7 +1,7 @@
 """Module containing parsing functions for G16 log files."""
 
 import numpy as np
-from molLego.parsers.parser import Parser
+from molLego.parsers.parser import OutputParser
 from molLego.utilities.utils import readlines_reverse, parse_mol_formula
 
 # Dict mapping job type to the properties contained in the log file
@@ -27,7 +27,7 @@ __property_flags__ = {
 class LogFileError(Exception):
     """Rasied when error in reading log file."""
 
-class GaussianLog(Parser):
+class GaussianLog(OutputParser):
     """
     Represents a Gaussian log file.
 
@@ -813,28 +813,28 @@ class GaussianLog(Parser):
                                        for i in range(1,9,2)])
         return dipole
 
-    def pull_trajectory(self):
-        """
-        Pull E and geometry of optimisation trajectory.
+    # def pull_trajectory(self):
+    #     """
+    #     Pull E and geometry of optimisation trajectory.
 
-        Returns
-        -------
+    #     Returns
+    #     -------
         
 
-        """
-        opt_traj = []
+    #     """
+    #     opt_traj = []
 
-        with open(self.file_name, 'r') as infile:
-            for line in infile:
+    #     with open(self.file_name, 'r') as infile:
+    #         for line in infile:
 
 
-        pull_functions = {
-            'energy': self._pull_energy,
-            'geom': self._pull_geometry,
+    #     pull_functions = {
+    #         'energy': self._pull_energy,
+    #         'geom': self._pull_geometry,
 
-        opt_traj.append(
+    #     opt_traj.append(
             
             
-            (input_file, line, atom_number))
+    #         (input_file, line, atom_number))
 
         
