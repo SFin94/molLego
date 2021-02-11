@@ -6,22 +6,21 @@ from molLego.utilities.utils import readlines_reverse, parse_mol_formula
 
 # Dict mapping job type to the properties contained in the log file
 __job_to_property__ = {
-    'opt': ['energy', 'geom', 'opt'],
-    'freq': ['energy', 'geom', 'thermo', 'opt'],
-    'fopt': ['energy', 'geom', 'thermo', 'opt'],
-    'sp': ['energy', 'geom'],
-    'scan_relaxed': ['energy', 'geom', 'opt'],
-    'scan_rigid': ['energy', 'geom']
+    'opt': ['charge', 'energy', 'geom', 'opt'],
+    'freq': ['charge', 'energy', 'geom', 'thermo', 'opt'],
+    'fopt': ['charge', 'energy', 'geom', 'thermo', 'opt'],
+    'sp': ['charge', 'energy', 'geom'],
+    'scan_relaxed': ['charge', 'energy', 'geom', 'opt'],
+    'scan_rigid': ['charge', 'energy', 'geom']
     }
-
-    # Additional ones to add are trajectory; scan as property?
 
 # Dict of search flags in log file for each property
 __property_flags__ = {
+    'charge': 'Charge=',
     'energy': 'SCF Done',
     'geom': 'Standard orientation',
     'opt': 'Optimized Parameters',
-    'thermo': 'Thermochemistry'
+    'thermo': 'Thermochemistry',
     }
 
 class LogFileError(Exception):
@@ -33,8 +32,8 @@ class GaussianLog(OutputParser):
 
     Attributes
     ----------
-    atom_ids : :class:`list of str`
-        The IDs of the atoms in the molecule.
+    atoms : :class:`list of str`
+        The atomic symbols of the atoms in the molecule.
 
     atom_number : :class:`int`
         The number of atoms in the molecule.
@@ -87,7 +86,6 @@ class GaussianLog(OutputParser):
             # Set molecule details.
             atom_number, elements, charge = parse_mol_formula(output[6])
             self.atom_number = atom_number
-            self.elements = elements
             self.charge = charge
             self.atom_ids = self._pull_atom_ids()
 
@@ -237,8 +235,8 @@ class GaussianLog(OutputParser):
 
         Returns
         -------
-        job_property_flags : :class:`dict`
-            A :class:`dict`, where the key is a property type and the value
+        job_property_flags : `dict`
+            A `dict`, where the key is a property type and the value
             is the corresponding string flag for parsing the property from
             the Gaussian log file.
 
@@ -292,6 +290,26 @@ class GaussianLog(OutputParser):
 
         return atom_ids
 
+    def _pull_charge(self, infile, current_line):
+        """
+        Pull the charge from the logfile.
+
+        Parameters
+        ----------
+        infile : iter object
+            Lines of file
+
+        current_line
+            Current line in file
+
+        Returns
+        -------
+        :class:`int`
+            Formal charge of molecule.
+
+        """
+        return int(float(current_line.split()[1]))
+
     def _pull_geometry(self, infile, current_line):
         """
         Pull the cartesian coordinate geometry from the log file.
@@ -307,7 +325,8 @@ class GaussianLog(OutputParser):
         Returns
         -------
         :class:`numpy.ndarray`
-            The xyz coordinates for each atom.
+            A ``(N, 3)`` array of x, y, z positions for each atom.
+            Where N is the number of atoms in the molecule.
 
         """
         # Initalise variables
@@ -469,7 +488,8 @@ class GaussianLog(OutputParser):
         else:
             return False
 
-    def get_properties(self, opt_steps=None):
+    # def get_properties(self, opt_steps=[1]):
+    def get_properties(self):
         """
         Get properties from the log file.
 
@@ -502,6 +522,7 @@ class GaussianLog(OutputParser):
             'energy': self._pull_energy,
             'geom': self._pull_geometry,
             'thermo': self._pull_thermo,
+            'charge': self._pull_charge,
             'opt': self._pull_optimised
             }
 
@@ -513,8 +534,8 @@ class GaussianLog(OutputParser):
 
         # Set opt count to 2 if fopt calculation
         # as thermo occurs after opt count met.
-        if self.job_type == 'fopt':
-            opt_steps = [2] if opt_steps == [1] else opt_steps
+        # if self.job_type == 'fopt':
+        #     opt_steps = [2] if opt_steps == [1] else opt_steps
 
         # Open and iterate through log file.
         with open(self.file_name, 'r') as infile:
@@ -523,17 +544,19 @@ class GaussianLog(OutputParser):
                 for prop, flag in job_property_flags.items():
                     if flag in line:
                         step_result[prop] = pull_functions[prop](infile, line)
-                        opt_count += self._update_opt_count(prop)
+                        # opt_count += self._update_opt_count(prop)
 
-                # If target optimisation step is met append results.
-                if (opt_count == opt_steps[opt_step_ind]):
-                    opt_step_ind += 1
-                    mol_results[opt_count] = step_result
-                    step_result = {}
+                # # If target optimisation step is met append results.
+                # if (opt_count == opt_steps[opt_step_ind]):
+                #     opt_step_ind += 1
+                #     mol_results[opt_count] = step_result
+                #     step_result = {}
 
-                    # Return results if calculated for all optimisation steps.
-                    if opt_step_ind == len(opt_steps):
-                        return mol_results
+                #     # Return results if calculated for all optimisation steps.
+                #     if opt_step_ind == len(opt_steps):
+                #         return mol_results
+            
+            return step_result
 
     def _process_scan_info(self, scan_input):
         """
