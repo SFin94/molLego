@@ -5,7 +5,7 @@ import pandas as pd
 
 import molLego.parsers.parse_gaussian as pgauss
 import molLego.utilities.geom as geom
-import molLego.molecules.molecules as molecules
+import molLego.molecules.molecule as molecules
 
 def construct_mols(system_file):
     """
@@ -60,14 +60,14 @@ def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
     # Create a dataframe of molecule attributes depending on object type (Molecule or MoleculeThermo)
     data = []
     for ind, mol in enumerate(mols):
-        properties = {'File': mol.file_name, 'E SCF (h)': mol.escf, 'Optimised': mol.optimised}
+        properties = {'File': mol.file_name, 'E SCF (h)': mol.e, 'Optimised': mol.optimised}
 
-        if hasattr(mol, 'e'):
+        if hasattr(mol, 'g'):
             properties.update({'E': mol.e, 'H': mol.h, 'G': mol.g, 'S': mol.s, 'ZPE': mol.zpe})
             quantity = ['E', 'H', 'G']
         else:
             quantity = ['E SCF']
-            properties.update({'E SCF': mol.escf*2625.5})
+            properties.update({'E SCF': mol.e*2625.5})
         data.append(properties)
 
         if hasattr(mol, 'parameters'):
