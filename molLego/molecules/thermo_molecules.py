@@ -22,26 +22,27 @@ class GaussianThermoMolecule(Molecule):
         The formal charge of the molecule.
     
     geometry : :class:`numpy ndarray`
-        A ``(N, 3)`` array of x, y, z coorindates for each atom.
+        A ``(N, 3)`` array of x, y, z coordinates for each atom.
         Where N is the number of atoms in the molecule.
     
     e: :class:`float`
-        The thermally corrected energy of the molecule.
+        The thermally corrected energy of the molecule (kJ/mol).
     
     escf: :class:`float`
-        The SCF Done energy of the molecule.
+        The SCF Done energy of the molecule (a.u.).
     
     h: :class:`float`
-        The thermally corrected enthalpy of the molecule.
+        The thermally corrected enthalpy of the molecule (kJ/mol).
     
     g: :class:`float`
-        The thermally corrected Gibbs free energy of the molecule.
+        The thermally corrected Gibbs free energy of the molecule
+        (kJ/mol).
     
     s: :class:`float`
-        The entropy of the molecule.
+        The entropy of the molecule (kJ/mol).
     
     zpe: :class:`float`
-        The Zero Point Energy of the molecule.
+        The Zero Point Energy of the molecule (kJ/mol).
    
     """
 
@@ -71,6 +72,7 @@ class GaussianThermoMolecule(Molecule):
         self.charge = properties['charge']
         self.geometry = properties['geom']
         self.e = properties['energy']
+        self.parameters = {}
 
         # Set additional thermodynamic attributes.
         self.zpe = properties['thermo']['ZPE']
@@ -78,3 +80,34 @@ class GaussianThermoMolecule(Molecule):
         self.h = properties['thermo']['H']
         self.g = properties['thermo']['G']
         self.s = properties['thermo']['S']
+
+    def get_df_repr(self):
+        """
+        Create dict representation of Molecule for a DataFrame.
+
+        Returns
+        -------
+        df_rep : `dict`
+            Molecule properties in the format:
+            {
+                file_name   : path to parent output file,
+                e : thermally corrected energy (kJ/mol),
+                zpe : zero point energy (kJ/mol)
+                h : thermally corrected enthalpy (kJ/mol)
+                s : entropy (kJ/mol)
+                g : thermally corrected Gibbs free energy (kJ/mol)
+                (optional)
+                parameter key : parameter value
+                [for all paramaeters in self.parameters]
+            }
+
+        """
+        df_rep = {'file_name': self.parser.file_name,
+                  'e': self.e,
+                  'zpe': self.zpe,
+                  'h': self.h,
+                  's': self.s,
+                  'g': self.g}
+        df_rep.update(self.parameters)
+
+        return df_rep

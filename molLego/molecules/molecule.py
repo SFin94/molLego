@@ -29,8 +29,8 @@ class Molecule():
         The energy of the molecule.
 
     parameters : :class:`dict`
-        Where key is the parameter identifier,
-        and value is the geometric parameter.
+        Where Key is the parameter identifier,
+        and Value is the geometric parameter.
         E.g. O1-C2-O3: 180.00
         
     """
@@ -41,11 +41,10 @@ class Molecule():
 
         Parameters
         ----------
-        parser: `OutputParser`
+        parser : `OutputParser`
             Parser to use for calculation output.
-            [default: GaussianLog]
         
-        output_file: `str`
+        output_file : `str`
             The path to the calculation output file.
 
         """
@@ -68,7 +67,7 @@ class Molecule():
         Calculate geometric parameters (bonds, angles, dihedrals).
 
         Parameters saved in :class: `dict`.
-        Where key is `str` of each atom_id and atom_index.
+        Where Key is `str` of each atom_id and atom_index.
         E.g. C1-H2
         Value is the value of the geometric parameter.
 
@@ -104,7 +103,7 @@ class Molecule():
 
         Parameters
         ----------
-        atom_index: :class: `iterable` of :class:`int`
+        atom_index : :class: `iterable` of :class:`int`
             The index(es) of the atoms to return names for.
             [default: ``None``] If ``None`` then returns for all
             atom in the molecule.
@@ -133,7 +132,7 @@ class Molecule():
         
         Parameters
         ----------
-        atom_index: :class: `iterable` of :class:`int`
+        atom_index : :class: `iterable` of :class:`int`
             The index(es) of the atoms to return names for.
             [default: ``None``] If ``None`` then returns for all
             atom in the molecule.
@@ -158,6 +157,29 @@ class Molecule():
         for atom_number in atomic_numbers:
             yield atom_number
 
+    def get_df_repr(self):
+        """
+        Create dict representation of Molecule for a DataFrame.
+
+        Returns
+        -------
+        df_rep : `dict`
+            Molecule properties in the format:
+            {
+                file_name   : path to parent output file,
+                e : energy (units: calculation dependant),
+                (optional)
+                parameter key : parameter value
+                [for all paramaeters in self.parameters]
+            }
+
+        """
+        df_rep = {'file_name': self.parser.file_name,
+                  'e': self.e}
+        df_rep.update(self.parameters)
+
+        return df_rep
+
     def reindex_molecule(self, reindex):
         """
         Reorder molecule geometry and atom list from a given mapping.
@@ -178,7 +200,7 @@ class Molecule():
 
         Parameters
         ----------
-        reindex: `list of int`
+        reindex : `list of int`
             List of new index positions for each atom.
     
         """
