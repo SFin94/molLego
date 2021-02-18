@@ -79,8 +79,7 @@ class GaussianLog(OutputParser):
             output, job_input = self._pull_end_output()
             output = output.split('\\')
 
-            # Set job details.
-            # self.job_type = output[3]
+            # Set calculation details.
             self.method, self.basis_set = output[4:6]
 
             # Set molecule details.
@@ -99,7 +98,7 @@ class GaussianLog(OutputParser):
             try:
                 job_input = self._pull_start_output()
             
-                # Set MP2 as method if present for correct energy parsing
+                # Set MP2 as method if present for correct energy parsing.
                 if 'mp2' in job_input:
                     self.method = 'mp2'
 
@@ -161,6 +160,7 @@ class GaussianLog(OutputParser):
             
             for line in infile:
                 if '1\\1\\' in line:
+
                     # Pull the first two sections of end log ouput:
                     while section_count < 2:
                         section_count += ('\\\\' in line)
@@ -462,60 +462,22 @@ class GaussianLog(OutputParser):
 
         return thermochemistry
 
-    def _update_opt_count(self, property):
-        """
-        Update the count of the current geometry number in the log file.
-
-        Updates once count for each optimised geometry if the calculation is an
-        optimisation, or updates for each new geometry if the calculation is a
-        rigid scan (single point).
-
-        Parameters
-        ----------
-        property : :class:`str`
-            The property being currently parsed from the log file
-
-        Returns
-        -------
-        :class:`Bool`
-            ``True`` if updating the opt count. ``False``, otherwise.
-
-        """
-        if property == 'energy':
-            return (self.job_type == 'sp')
-        elif property == 'opt':
-            return (self.job_type != 'sp')
-        else:
-            return False
-
-    # def get_properties(self, opt_steps=[1]):
     def get_properties(self):
         """
         Get properties from the log file.
 
-        Parse properties such as the energy, thermodynamic data, geometry,
-        and optimised information from specified optimsation step(s) in the log
-        file for the molecule.
-
-        Parameters
-        ----------
-        opt_steps : :class:`list of int`, optional
-            Target optimisation/geometry step(s) wanted from the scan (rigid
-            scan `spe=True``; relaxed scan `spe=False`) or optimisation
-            trajectory (``spe=True``).
+        Parse properties such as the energy, thermodynamic data, 
+        geometry, and optimised information from the log file 
+        for the molecule.
 
         Returns
         -------
-        :class:`dict of dicts`
-            A dictionary containing target properties for the molecule with
-            the key as the optimisation/sp count [opt_steps].
+        :class:`dict`
+            A dictionary containing target properties for the molecule.
 
         """
         # Initialise variables.
         step_result = {}
-        opt_count = 0
-        opt_step_ind = 0
-        mol_results = {}
 
         # Mapping of functions to property.
         pull_functions = {
@@ -532,11 +494,6 @@ class GaussianLog(OutputParser):
         if job_property_flags['energy'] == 'EUMP2':
             pull_functions['energy'] = self._pull_mp2_energy
 
-        # Set opt count to 2 if fopt calculation
-        # as thermo occurs after opt count met.
-        # if self.job_type == 'fopt':
-        #     opt_steps = [2] if opt_steps == [1] else opt_steps
-
         # Open and iterate through log file.
         with open(self.file_name, 'r') as infile:
             for line in infile:
@@ -544,17 +501,6 @@ class GaussianLog(OutputParser):
                 for prop, flag in job_property_flags.items():
                     if flag in line:
                         step_result[prop] = pull_functions[prop](infile, line)
-                        # opt_count += self._update_opt_count(prop)
-
-                # # If target optimisation step is met append results.
-                # if (opt_count == opt_steps[opt_step_ind]):
-                #     opt_step_ind += 1
-                #     mol_results[opt_count] = step_result
-                #     step_result = {}
-
-                #     # Return results if calculated for all optimisation steps.
-                #     if opt_step_ind == len(opt_steps):
-                #         return mol_results
             
             return step_result
 
@@ -836,28 +782,83 @@ class GaussianLog(OutputParser):
                                        for i in range(1,9,2)])
         return dipole
 
-    # def pull_trajectory(self):
-    #     """
-    #     Pull E and geometry of optimisation trajectory.
+    def pull_trajectory(self, calculation_steps=None, opt=True):
+        """
+        Pull energy and geometry from intermediate calculation step(s).
 
-    #     Returns
-    #     -------
+        Can be used to pull intermediate or all steps from an
+        optimisaton trajectory, rigid scan or relaxed scan.
         
+        Parameters
+        ----------
+        calculation_steps : :class:`iterable` of :class:`ints`
+            Target calculation steps. 
+            [Default: None] If ``None`` then calculates all steps.
+            Can be single `int` if single calculation step wanted.
 
-    #     """
-    #     opt_traj = []
+        opt : `bool`
+            [Default: True]
+            If ``True`` then searches for optimised geometries as
+            calculation steps (e.g. relaxed scan).
+            Else searches for SCF Done energies as calculation
+            steps (e.g. opt trajectory, rigid scan).
 
-    #     with open(self.file_name, 'r') as infile:
-    #         for line in infile:
+        Returns
+        -------
+        step_results : `dict of dicts`           
+            Where Value is dict of energies and geometries and
+            Key is calculation step.
 
+        """
+        # Process target calculation step input.
+        if calculation_steps is None:
+            all_steps = True
+            calculation_steps = [1]
+        else:
+            all_steps = False
+        if isinstance(calculation_steps, int):
+            calculation_steps = [calculation_steps]
 
-    #     pull_functions = {
-    #         'energy': self._pull_energy,
-    #         'geom': self._pull_geometry,
-
-    #     opt_traj.append(
-            
-            
-    #         (input_file, line, atom_number))
-
+        # Set starting count for calculation steps.
+        calc_step_count = 0
+        calc_step_ind = 0
+        step_result = {}
+        results = {}
         
+        # Functions and flags for collecting energy and geometry.
+        pull_functions = {
+            'energy': self._pull_energy,
+            'geom': self._pull_geometry,
+            'opt': self._pull_optimised
+        }
+        prop_flags = {
+            'energy': 'SCF Done',
+            'geom': 'Standard orientation',
+            'opt': 'Optimized Parameters'
+        }
+        
+        # Iterate over log file and parse properties.
+        with open(self.file_name, 'r') as infile:
+            for line in infile:
+                for prop, flag in prop_flags.items():
+                    if flag in line:
+                        step_result[prop] = pull_functions[prop](
+                            infile, line)
+                        
+                        # Update step count depending on target.
+                        if (all([prop == 'opt', opt]) or
+                           all([prop == 'energy', not opt])):
+                            calc_step_count += 1
+                
+                # Save target calculation step result.
+                if (calc_step_count == calculation_steps[calc_step_ind]):
+                    calc_step_ind += 1
+                    results[calc_step_count] = step_result
+                    step_result = {}
+
+                    if all_steps:
+                        calculation_steps.append(calc_step_count + 1)
+                    elif calc_step_ind == len(calculation_steps):
+                        return results
+
+        return results
