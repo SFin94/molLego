@@ -1,91 +1,163 @@
-"""Module of routines that use Molecule/MoleculeThermo/ReactionPath objects."""
+"""Module of functions that use Molecule objects."""
 import sys
 import numpy as np
 import pandas as pd
 
 import molLego.parsers.parse_gaussian as pgauss
 import molLego.utilities.geom as geom
-import molLego.molecules.molecule as molecules
+from molLego.molecules.molecule import Molecule
 
-def construct_mols(system_file):
+def construct_mols(system_file, parser, molecule_type=Molecule):
     """
-    Create Molecule or MoleculeThermo object for each molecule in a system conf file.
+    Create Molecules for output files defined by a system conf file.
 
-    Parameters:
-     system_file: str - name of the system file containing the molecule names/keys and the log files to be parsed
-            The file should be formatted:
-                mol_key mol_output.log
-        Lines can be commented out with a #
+    The conf file contains molecule names and files to be parsed.
+    Multiple files can be parsed for one molecule name.
+    Example formatting:
+        molecule_1_name molecule_1_output[.ext]
+        molecule_2_name molecule_2a_output[.ext],molecule_2b_output[.ext]
+        # molecule_3_name molecule_3_output[.ext]
 
-    Returns:
-     mol_names: list of str - molecule names/keys for each molecule in file [mol_key in system file]
-     mols: list of :Molecule:/:MoleculeThermo: objects for each molecule in system file
-    
+    Where [.ext] must be compatiable with the parser specified.
+    Multiple output files are csv (molecule_2).
+    Lines can be commented out with leading '#' (molecule_3).
+
+    Parameters
+    ----------
+    system_file : `str`
+        File path/name to conf file containing system to parse.
+
+    parser : `OutputParser`
+        Parser class to use for calculation output.
+
+    molecule_type : `Molecule`
+        Molecule class to use for calculation output.
+
+    Returns
+    -------
+    molecules : `dict` of :Molecule:
+        Molecule objects for each file in system conf file.
+
     """
-    # Read in system conf file
-    with open(system_file) as input_file:
-        input = input_file.read().splitlines()
-
     # Initialise variables
-    mols, mol_names, mol_files = [], [], []
+    mol_names = []
+    molecules = []
 
-    # Processes contents of .conf file to a list of mol_names and corresponding mol_files
-    for line in input:
-        if line[0] != '#':
-            mol_names.append(line.split()[0])
-            mol_files.append(line.split()[1].split(','))
-
-            # Create Molecule or MoleculeThermo object from the input file(s) in each entry of the .conf file
-            mols.append(molecules.init_mol_from_log(mol_files[-1][0]))
-            for extra_file in mol_files[-1][1:]:
-                extra_mol = molecules.init_mol_from_log(extra_file)
-                mols[-1] = sum_mols(mols[-1], extra_mol)
+    # Process files and names in system conf file.
+    with open(system_file, 'r') as infile:
+        for system_line in infile:
+            if system_line[0] != '#':
+                # Set name and files from input line.
+                mol_names.append(system_line.split()[0])
+                mol_files = system_line.split()[1].split(',')
+                
+                # Initialise molecules for each file.
+                mols = [molecule_type(output_file=x, parser=parser) for x in mol_files]
+                # Need to think about how to handle combining molecules.
+                if len(mols) > 1:
+                    """Currently won't function"""
+                    molecules.append(sum_mols(mols))
+                else:
+                    molecules.append(mols[0])
 
     return mol_names, mols
 
-def mols_to_dataframe(mols, mol_names=None, save=None, min=None):
-
-    """Function which creates a dataframe for all of the molecules and can write to a csv
-
-    Parameters:
-     mols: list of Molecule or MoleculeThermo objects - instances for each molecule
-     mol_names [optional, default=None]: list - molecule names/keys
-     save [optional, default=None]: str - name of file to write dataframe to (without csv extension)
-     min [optional, default=None]: str - name of the molecule to calculate all values relative too. If not defined then relative values are calculated w.r.t. lowest value for each quantity.
-
-    Returns:
-     molecule_df: pandas dataframe - dataframe of all molecules with realtive quantities calcualted
+def mols_to_dataframe(mols, mol_names=None, save=None, mol_zero=None):
     """
+    Create DataFrame of Molecules with relative values.
 
-    # Create a dataframe of molecule attributes depending on object type (Molecule or MoleculeThermo)
-    data = []
-    for ind, mol in enumerate(mols):
-        properties = {'File': mol.file_name, 'E SCF (h)': mol.e, 'Optimised': mol.optimised}
+    Parameters
+    ----------
+    mols : `list of :Molecule:`
+        Molecules to send to dataframe.
+    
+    mol_names : `list of str` 
+        [Default=None]
+        If ``None`` then DataFrame index is Molecule file name.
 
-        if hasattr(mol, 'g'):
-            properties.update({'E': mol.e, 'H': mol.h, 'G': mol.g, 'S': mol.s, 'ZPE': mol.zpe})
-            quantity = ['E', 'H', 'G']
-        else:
-            quantity = ['E SCF']
-            properties.update({'E SCF': mol.e*2625.5})
-        data.append(properties)
+    save : `str`
+        [Default=None].
+        File name to write DataFrame to (w/out .csv).
+        If ``None`` then DataFrame is not written to file.
 
-        if hasattr(mol, 'parameters'):
-            properties.update(mol.parameters)
+    mol_zero : `str` or `int`
+        [Default=None]
+        Molecule to calculate values relative too. 
+        Can be `str` of mol_name of Molecule 
+        Or `int` index of Molecule in mols list.
+        If ``None`` relative values calculated w.r.t. lowest
+        value for each quantity.
+
+    Returns
+    -------
+    molecule_df : :pandas: `DataFrame`
+        DataFrame of Molecules and properties.
+     
+    """
+    mol_data = []
+    for i, mol in enumerate(mols):
+        mol_data.append(mol.get_df_repr())
+
+    # Set index from file name if names not given.
     if mol_names == None:
-        mol_names = []
-        [mol_names.append(mol.file_name.split('/')[-1][:-4]) for mol in mols]
-        molecule_df = pd.DataFrame(data)
-    molecule_df = pd.DataFrame(data, index=mol_names)
+        mol_names = [mol.parser.file_name.split('/')[-1].split('.')[0]
+                     for mol in mols]
+    
+    # Create data frame and calculate relative values.
+    molecule_df = pd.DataFrame(mol_data, index=mol_names)
+    if isinstance(mol_zero, int):
+        mol_zero = mol_names[mol_zero]
+    molecule_df = calc_relative(molecule_df, mol_zero=mol_zero)
 
-    # Calculate the relative thermodynamic quantities
-    molecule_df = calc_relative(molecule_df, quantities=quantity, min=min)
-
-    # Writes dataframe to file if filename provided
+    # Write dataframe to file if filename provided.
     if save != None:
         molecule_df.to_csv(save + '.csv')
+
     return molecule_df
 
+def calc_relative(molecule_df, quantities=None, mol_zero=None):
+    """
+    Calculate relative values in Molecule DataFrame.
+    
+    Parameters
+    ----------
+    molecule_df : :pandas: `DataFrame`
+        DataFrame of molecule properties.
+
+    quantities: `list of str`
+        [Default=None] 
+        The quantitity/ies to calculate relative
+        values for (str should match DataFrame heading).
+        If ``None`` default to e or e/h/g depending on dataframe. 
+    
+    mol_zero : `str``
+        [Default=None]
+        Index of molecule to calculate values relative too.
+        If ``None`` relative values calculated w.r.t. lowest
+        value for each quantity.
+    
+    Returns
+    -------
+    molecule_df : :pandas: `DataFrame`
+        Updated DataFrame of relative molecule properties.
+
+    """
+    # Set quantities to those present in dataframe is None given.
+    if quantities == None:
+        all_quantities = ['e', 'h', 'g']
+        present = np.asarray([x in list(molecule_df.columns)
+                            for x in all_quantities])
+        quantities = [all_quantities[x] for x in np.where(present)[0]]
+
+    # Find zero value for quantities and set other values relative.
+    for q in quantities:
+        if mol_zero != None:
+            zero = molecule_df[q, mol_zero]
+        else:
+            zero = molecule_df[q].min()
+        molecule_df['relative '+q] = molecule_df[q] - zero
+
+    return molecule_df
 
 def parse_tracked_params(system_file):
 
@@ -157,56 +229,21 @@ def init_scan(*args, tracked_params=None):
                 total_scan_steps *= (scan_parameter['num_steps'] + 1)
             opt_steps = list(range(1, total_scan_steps+1))
 
-        scan_molecules += molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
+        # scan_molecules += molecules.init_mol_from_log(input_file, opt_steps=opt_steps, parameters=parameters)
 
     return scan_molecules, scan_info
 
-
-def calc_relative(mols_data_full, mols_to_plot=None, quantities=None, min=None):
-
-    """Function to process a dataframe of molecules to plot and calculates relative E SCF (kJ/mol) or Relative E/G/H if thermodynamic properties given
-
-        Parameters:
-         mols_data_full: pandas DataFrame - full dataframe for molecules
-         mols_to_plot: List of str [optional, default=None] - names (.log file) of conformers to plot from the dataFile
-         quantities: list of str [optional, default=None] - The quantitity/ies to plot (str should match dataframe heading). If None, sets to either E, H, G if thermodynamic data or E SCF if not
-         min: str [optional, default=None] - index of moelcule to be treated as zero reference
-
-        Returns:
-         mols_data: pandas DataFrame - dataframe of the molecules to plot with relative (E SCF)/(E/G/H) columns for plotting
-    """
-
-    # Subset amount of data frame to plot
-    if mols_to_plot != None:
-        mols_data = mols_data_full.reindex(mols_to_plot)
-    else:
-        mols_data = mols_data_full
-
-    # Calculate relative and normalised quantities
-    if quantities == None:
-        if 'G' in list(mols_data.columns):
-            quantities = ['E', 'H', 'G']
-        else:
-            quantities = ['E SCF']
-    for q in quantities:
-        if min != None:
-            zero = mols_data[q][min]
-        else:
-            zero = mols_data[q].min()
-        mols_data['Relative '+q] = mols_data[q] - zero
-
-    return mols_data
-
-
 def sum_mols(*args):
 
-    """Function that adds two molecules together to creat a new one, e.g. for a reactant or product set
-
-    Parameters:
-     args: Molecule objects - the molecules to be added
-
-    Returns:
-     new_mol - ::class:: object for a molecule
+    """
+    Want to take a list of molecules, set properties as first one,
+    and then add the others. 
+    Single numeric items can be summed.
+    Discrete data will need to be put in to a list?
+    
+    Whether to create a new molecule object altogether - would need new init
+    possibility just to set all values.
+    Or make new class which is a collection of molecules?
 
     """
 
