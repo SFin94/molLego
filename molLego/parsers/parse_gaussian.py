@@ -24,7 +24,7 @@ __property_flags__ = {
     }
 
 class LogFileError(Exception):
-    """Rasied when error in reading log file."""
+    """Raised when error in reading log file."""
 
 class GaussianLog(OutputParser):
     """
@@ -504,19 +504,50 @@ class GaussianLog(OutputParser):
             
             return step_result
 
-    def _process_scan_info(self, scan_input):
+    def _pull_relaxed_scan(self, current_line, infile):
+        """
+        Pull relaxed scan information from a log file.
+        
+        Parameters
+        ----------
+        infile : iter object
+            Lines of file
+
+        current_line
+            Current line in file
+
+        Returns
+        -------
+        :class:`list`
+            ModRedundant input lines containing scanned parameters.
+
+        """
+        # Set modredundant input flag.
+        scan_input = []
+
+        current_line = next(infile)
+        while current_line.strip():
+            if 'S' in current_line:
+                scan_input.append(current_line)
+            current_line = next(infile)
+                    
+        return scan_input
+
+    def _process_relaxed_scan(self, scan_input):
         """
         Process scan information from modredundant input.
 
         Parameters
         ----------
-        scan_input : `str`
-            Unprocessed modredundant input line from log file.
+        scan_input : :class:`list` of :class:`str`
+            Unprocessed modredundant input scan lines from log file.
 
         Returns
         -------
-        :class:`dict`
-            Details of the relaxed scan in a format:
+        scan : :class:`dict` of :class:`dict`
+            An entry for each scan parameter that the PES is a 
+            function of. Where Key is the scan parameter id and Value is a 
+            dictionary of scan information of form:
             {
                 param_key : :class:`str`
                     '-' seperated atom id + index of all atoms in scan
@@ -528,64 +559,35 @@ class GaussianLog(OutputParser):
             }
 
         """
-        # Initialise variables.
-        scan_info = {
-            'param_key': '',
-            'atom_inds': []
-            }
+        scan_info = {}
         
-        # Process scan information from modredundant input
-        scan_input = scan_input.split()
-        scan_info['num_steps'] = int(scan_input[-2])
-        scan_info['step_size'] = float(scan_input[-1])
+        # Process scan information from modredundant input.
+        for i, line in enumerate(scan_input):
 
-        # Set atom indexes (-1 for python index) and parameter key
-        # ('-' seperated, atom id, atom index)
-        s_index = scan_input.index('S')
-        for i in scan_input[1:s_index]:
-            scan_info['atom_inds'].append(int(i) - 1)
-            scan_info['param_key'] += (f'{self.atom_ids[int(i)-1]}{i}-')
-        scan_info['param_key'] = scan_info['param_key'][:-1]
-        
+            # Initialise scan step result.
+            scan_var = line[0] + str(i)
+            scan_info[scan_var] = {
+                'param_key': '',
+                'atom_inds': []
+                }
+
+            line = line.split()
+            scan_info[scan_var]['num_steps'] = int(line[-2])
+            scan_info[scan_var]['step_size'] = float(line[-1])
+
+            # Set atom indexes (-1 for python index) and parameter key
+            # ('-' seperated, atom id, atom index)
+            s_index = line.index('S')
+            for i in line[1:s_index]:
+                scan_info[scan_var]['atom_inds'].append(int(i) - 1)
+                scan_info[scan_var]['param_key'] += (
+                    f'{self.atom_ids[int(i)-1]}{i}-')
+            scan_info[scan_var]['param_key'] = scan_info[
+                scan_var]['param_key'][:-1]
+
         return scan_info
-
-    def pull_scan_input(self):
-        """
-        Pull relaxed scan information from a log file.
-
-        Returns
-        -------
-        :class:`dict`
-            Scan information in the form:
-                {
-                param_key : :class:`str`
-                    '-' seperated atom id + index of all atoms in scan
-                    parameter e.g. 'H1-O2'.
-                atom_inds : :class:`list of int`
-                    indexes of the atoms in scan parameter
-                num_steps : :class:`int` - number of scan steps
-                step_size : :class:`float` - size of the scan step
-            }
-
-        """
-        # Set modredundant input flag.
-        scan_input = False
-        modred_flag = 'The following ModRedundant input section has been read:'
-
-        # Iterate over file and pull modredundant section.
-        with open(self.file_name, 'r') as infile:
-            for line in infile:
-                if modred_flag in line:
-                    modred_line = next(infile)
-                    while modred_line.strip():
-                        if 'S' in modred_line:
-                            scan_input = self._process_scan_info(modred_line)
-                        modred_line = next(infile)
-                    
-                    break
-        return scan_input
         
-    def _pull_rigid_scan(self, infile):
+    def _pull_rigid_scan(self, infile, current_line):
         """
         Pull the rigid scan information from the log file.
 
@@ -596,12 +598,14 @@ class GaussianLog(OutputParser):
 
         Returns
         -------
-        :class:`list of str`
-            The initial Z matrix for the molecule.
+        :class:`list` of :class:`list of str` 
+            List is a container for:
+            initial_zmat : :class:`list of str`
+                The initial Z matrix for the molecule.
 
-        :class:`list of str`
-            Unprocessed lines of information for any set variables in
-            the Z matrix.
+            variables : :class:`list of str`
+                Unprocessed lines of information for any set variables in
+                the Z matrix.
 
         """
         # Initialise variables
@@ -624,44 +628,43 @@ class GaussianLog(OutputParser):
             variables.append(current_line.split())
             current_line = next(infile)
 
-        return initial_zmat, variables
+        return [initial_zmat, variables]
 
-    def _process_rigid_scan(self, initial_zmat, variables):
+    def _process_rigid_scan(self, scan_input):
         """
         Process raw rigid scan input for each scan parameter.
 
         Parameters
         ----------
-        initial_zmat : :class:`list of str`
-            The initial Z matrix for the molecule.
-
-        variables : :class:`list of str`
-            Unprocessed lines of information for any set variables in
-            the Z matrix.
+        scan_input : :class:`list` of :class:`list of str`
+            Container of the initial Z matrix for the molecule
+            and the unprocessed lines of information for any 
+            set variables in the Z matrix.
 
         Returns
         -------
-        :class:`dict of dicts`
-            An entry for each scan parameter where key is the variable name
-            in the Z matrix and the value is a dictionary of form:
+        :class:`dict` of :class: `dicts`
+            An entry for each scan parameter that the PES is a 
+            function of. Where Key is the 
+            variable name in the Z matrix and Value is a 
+            dictionary of scan information of form:
             {
                 param_key : :class:`str`
                     '-' seperated atom id + index of all atoms in scan
                     parameter e.g. 'H1-O2'.
                 atom_inds : :class:`list of int`
-                    Indexes of the atoms in the scan parameter.
-                num_steps : :class:`int`
-                    The number of scan steps.
-                step_size : :class:`float`
-                    The size of the scan step.
+                    indexes of the atoms in scan parameter
+                num_steps : :class:`int` - number of scan steps
+                step_size : :class:`float` - size of the scan step
             }
 
         """
-        # Intialise variables
+        # Unpack and intialise variables.
+        initial_zmat, variables = scan_input
         total_scan_steps = 1
         scan_info = {}
 
-        # Iterate over the variable entries to locate scan parameters
+        # Iterate over the variable entries to locate scan parameters.
         for var_line in variables:
             if any('Scan' in var for var in var_line):
                 # Set the number of steps and step size
@@ -674,42 +677,43 @@ class GaussianLog(OutputParser):
                     'step_size': step_size
                     }
 
-        # Find zmatrix line containing each scan variable
+        # Find zmatrix line containing each scan variable.
         for atom, atom_zmat in enumerate(initial_zmat):
-            for scan_variable in list(scan_info.keys()):
-                if scan_variable in atom_zmat:
+            for scan_var in list(scan_info.keys()):
+                if scan_var in atom_zmat:
 
                     # Set scan parameter and atom inds (python index)
                     # from the initial z matrix.
                     atom_inds = [atom]
                     param_key = self.atom_ids[atom] + str(atom+1)
                     atom_entry = atom_zmat.split()
-                    for i in range(1, atom_entry.index(scan_variable), 2):
+                    for i in range(1, atom_entry.index(scan_var), 2):
                         index = int(atom_entry[i]) - 1
                         atom_inds.append(index)
                         param_key += f'-{self.atom_ids[index]}{atom_entry[i]}'
 
                     # Set the scan parameter key and atom inds for each
                     # variable in the scan_info dict.
-                    scan_info[scan_variable]['atom_inds'] = atom_inds
-                    scan_info[scan_variable]['param_key'] = param_key
+                    scan_info[scan_var]['atom_inds'] = atom_inds
+                    scan_info[scan_var]['param_key'] = param_key
 
         return scan_info
 
-    def get_rigid_scan_info(self):
+    def pull_scan_input(self):
         """
-        Get the scan information for rigid scan from the log file.
+        Get the relaxed/rigid scan information from the log file.
 
         Returns
         -------
-        :class:`dict of dicts`
-            An entry for each scan parameter where key is the variable name
-            in the Z matrix and the value is a dictionary of form:
+        :class:`dict` of :class:`dict`
+            An entry for each scan parameter where Key is the 
+            variable name in the Z matrix and the value is a 
+            dictionary of form:
             {
                 param_key : :class:`str`
                     '-' seperated atom id + index of all atoms in scan
                     parameter e.g. 'H1-O2'.
-                atom_inds : :class:`list of int`
+                atom_inds : :class:`list` of :class:`int`
                     Indexes of the atoms in the scan parameter.
                 num_steps : :class:`int`
                     The number of scan steps.
@@ -718,16 +722,24 @@ class GaussianLog(OutputParser):
             }
 
         """
-        zmat_start_flag = 'Charge'
-
-        # Iterate through file and pull relevant input sections
-        with open(self.file_name, 'r') as input:
-            for line in input:
-                if zmat_start_flag in line:
-                    variables, initial_zmat = self._pull_rigid_scan(input)
+        # Initialise functions and parse flag from scan type.
+        if self.job_type == 'scan_rigid':
+            parse_flag = 'Charge'
+            pull_function = self._pull_rigid_scan
+            process_function = self._process_rigid_scan
+        else:
+            parse_flag = 'ModRedundant input section'
+            pull_function = self._pull_relaxed_scan
+            process_function = self._process_relaxed_scan
+        
+        # Iterate through file and parse scan info section.
+        with open(self.file_name, 'r') as infile:
+            for line in infile:
+                if parse_flag in line:
+                    raw_scan_input = pull_function(line, infile)
                     break
 
-        return self._process_rigid_scan(variables, initial_zmat)
+        return process_function(raw_scan_input)
 
     def pull_atom_number(self):
         """
@@ -796,7 +808,7 @@ class GaussianLog(OutputParser):
             [Default: None] If ``None`` then calculates all steps.
             Can be single `int` if single calculation step wanted.
 
-        opt : `bool`
+        opt : :class:`bool`
             [Default: True]
             If ``True`` then searches for optimised geometries as
             calculation steps (e.g. relaxed scan).
@@ -805,7 +817,7 @@ class GaussianLog(OutputParser):
 
         Returns
         -------
-        step_results : `dict of dicts`           
+        step_results : :class:`dict` of :class:`dicts`           
             Where Value is dict of energies and geometries and
             Key is calculation step.
 
