@@ -546,8 +546,8 @@ class GaussianLog(OutputParser):
         -------
         scan : :class:`dict` of :class:`dict`
             An entry for each scan parameter that the PES is a 
-            function of. Where Key is the scan parameter id and Value is a 
-            dictionary of scan information of form:
+            function of. Where Key is the scan variable name and
+            Value is a dictionary of scan information of form:
             {
                 param_key : :class:`str`
                     '-' seperated atom id + index of all atoms in scan
@@ -706,9 +706,9 @@ class GaussianLog(OutputParser):
         Returns
         -------
         :class:`dict` of :class:`dict`
-            An entry for each scan parameter where Key is the 
-            variable name in the Z matrix and the value is a 
-            dictionary of form:
+            An entry for each scan parameter that the PES is a 
+            function of. Where Key is the scan variable name and
+            Value is a dictionary of scan information of form:
             {
                 param_key : :class:`str`
                     '-' seperated atom id + index of all atoms in scan
