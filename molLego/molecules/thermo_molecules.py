@@ -71,7 +71,7 @@ class GaussianThermoMolecule(Molecule):
         self.atom_number = len(self.atom_ids)
         self.charge = properties['charge']
         self.geometry = properties['geom']
-        self.e = properties['energy']
+        self.escf = properties['energy']
         self.parameters = {}
 
         # Set additional thermodynamic attributes.
@@ -98,7 +98,7 @@ class GaussianThermoMolecule(Molecule):
                 g : thermally corrected Gibbs free energy (kJ/mol)
                 (optional)
                 parameter key : parameter value
-                [for all paramaeters in self.parameters]
+                [for all parameters in self.parameters]
             }
 
         """
