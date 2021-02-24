@@ -12,7 +12,7 @@ def construct_mols(system_file, parser, molecule_type=Molecule):
     """
     Create Molecules for output files defined by a system conf file.
 
-    The conf file contains molecule names and files to be parsed.
+    The .conf file contains molecule names and files to be parsed.
     Multiple files can be parsed for one molecule name.
     Example formatting:
         molecule_1_name molecule_1_output[.ext]
@@ -49,21 +49,17 @@ def construct_mols(system_file, parser, molecule_type=Molecule):
         for system_line in infile:
             if system_line[0] != '#':
                 # Set name and files from input line.
-                mol_names.append(system_line.split()[0])
                 mol_files = system_line.split()[1].split(',')
                 
-                # Initialise molecules for each file.
-                mols = [molecule_type(output_file=x, parser=parser) for x in mol_files]
-                # Need to think about how to handle combining molecules.
-                if len(mols) > 1:
-                    """Currently won't function"""
-                    molecules.append(sum_mols(mols))
-                else:
-                    molecules.append(mols[0])
+                # Create molecules for each file.
+                for mol in mol_files:
+                    mol_names.append(system_line.split()[0])
+                    molecules.append(molecule_type(output_file=mol, parser=parser))
 
-    return mol_names, mols
+    return mol_names, molecules
 
-def mols_to_dataframe(mols, mol_names=None, save=None, mol_zero=None):
+def mols_to_dataframe(mols, mol_names=None, 
+                      save=None, mol_zero=None):
     """
     Create DataFrame of Molecules with relative values.
 
@@ -158,88 +154,47 @@ def calc_relative(molecule_df, quantities=None, mol_zero=None):
 
     return molecule_df
 
-def parse_tracked_params(system_file):
+def parse_tracked_params(param_file, molecules=None):
+    """
+    Parse paramaters from input file and calculate values.
 
-    """Function which parses any additional parameters to be tracked from an input file
+    Format of input file:
+            param_name (atom_types) atom1_ind atom2_ind [atom3_ind atom4_ind]
+            E.g. OPSC 3 1 2 7
 
-        Input:
-         system_file: str - name of input .txt file which contains any additional parameters to be tracked across the scan [indexes are expected to be the gaussian indexes]
-
-         Format of input file:
+    Parameters
+    ----------
+    param_file : :class:`str`
+        Path of input file containg parameters to be calculated.
+    
+        Format of input file:
              param_name (atom_types) atom1_ind atom2_ind [atom3_ind atom4_ind]
              E.g. OPSC 3 1 2 7
 
-        Returns:
-         tracked_params: dict:
-                         key: str - param_name
-                         value: list of ints - [atom_indexes]
-    """
+    molecules: :class:`list` of :Molecule:
+        The molecules to calcualte the parameters values for.
+        [Default=None]
+       
+    Returns
+    -------
+    tracked_param : :class:`dict`
+        Key is the param_name from the file and
+        Value is the atom indexes (0 index) that
+        define the atoms involved in the parameter.
 
+    """
     # Initialise empty dict for params
     tracked_params = {}
-    # Parse in file and seperate the indexes from the parameter ID and save as an entry to the dict
-    with open(system_file, 'r') as infile:
+    # Parse in file and seperate the indexes from the parameter ID and save as an entry to the dict.
+    with open(param_file, 'r') as infile:
         for el in infile:
             param = el.strip().split(' ')
             indexes = [int(ind)-1 for ind in param[1:]]
             tracked_params[param[0]] = indexes
-    return tracked_params
-
-def sum_mols(*args):
-
-    """
-    Want to take a list of molecules, set properties as first one,
-    and then add the others. 
-    Single numeric items can be summed.
-    Discrete data will need to be put in to a list?
     
-    Whether to create a new molecule object altogether - would need new init
-    possibility just to set all values.
-    Or make new class which is a collection of molecules?
-
-    """
-
-    # Set sums for quantities and empty lists.
-    escf_sum = 0.0
-    atom_list, log_files = [], []
-    optimised = True
-    thermo = False
-
-    # Check if Molecue/MoleculeThermo object for summing thermo properties or not.
-    if hasattr(args[0], 'e'):
-        thermo = True
-        # Thermo sums in order of e, h, g, s, zpe - should proabbly make as dict for consistency with other methods.
-        thermo_sums = [0.0, 0.0, 0.0, 0.0, 0.0]
-
-    # Add values for each molecule to quantity sums
-    for mol in args:
-
-        # Combine shared Molecue/MoleculeThermo properties of logfile, atom ids and SCF energy.
-        log_files.append(mol.file_name)
-        atom_list.append(mol.atom_ids)
-        escf_sum += mol.escf
-
-        # Check if molecules are optimised
-        if mol.optimised == False:
-            optimised = False
-            print('Warning, one molecule in complex is not optimised')
-
-        # Sum thermodynamic values if present.
-        if thermo == True:
-            try:
-                for i, thermo_val in enumerate([mol.e, mol.h, mol.g, mol.s, mol.zpe]):
-                    thermo_sums[i] += thermo_val
-            except AttributeError:
-                print('Molecule does not have correct thermodynamic values to be summed')
-
-    # Change logfile list.
-    log_files = ','.join(map(str, log_files))
-
-    # Instantiate molecule class with summed values - not sure if summing ZPE is physical.
-    if thermo == True:
-        new_mol = molecules.MoleculeThermo(log_files, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised, e=thermo_sums[0], h=thermo_sums[1], g=thermo_sums[2], s=thermo_sums[3])
-    else:
-        new_mol = molecules.Molecule(log_files, mol_energy=escf_sum, mol_geom=None, atom_ids=atom_list, optimised=optimised,)
-
-    return new_mol
-
+    # Calculate parameter values for each molecule.
+    if molecules is not None:
+        for mol in molecules:
+            mol.set_parameters(tracked_params)
+    
+    return tracked_params
