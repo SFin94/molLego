@@ -22,7 +22,7 @@ class Molecule():
         The formal charge of the molecule.
     
     geometry : :class:`numpy ndarray`
-        A ``(N, 3)`` array of x, y, z coorindates for each atom.
+        A ``(N, 3)`` array of x, y, z coordinates for each atom.
         Where N is the number of atoms in the molecule.
     
     e : :class:`float`
@@ -32,20 +32,23 @@ class Molecule():
         Where Key is the parameter identifier,
         and Value is the geometric parameter.
         E.g. O1-C2-O3: 180.00
+
+    parser : `OutputParser`
+        Parser to use for calculation output.
         
     """
 
     def __init__(self, output_file, parser):
         """
-        Initialise a Molecule from Gaussian Frequency calculation.
+        Initialise a Molecule from calculation output file.
 
         Parameters
         ----------
-        parser : `OutputParser`
-            Parser to use for calculation output.
-        
         output_file : `str`
             The path to the calculation output file.
+
+        parser : `OutputParser`
+            Parser to use for calculation output.
 
         """
         # Set parser object.
@@ -66,7 +69,7 @@ class Molecule():
         """
         Calculate geometric parameters (bonds, angles, dihedrals).
 
-        Parameters saved in :class: `dict`.
+        Parameters saved in `dict`.
         Where Key is `str` of each atom_id and atom_index.
         E.g. C1-H2
         Value is the value of the geometric parameter.
@@ -170,7 +173,7 @@ class Molecule():
                 e : energy (units: calculation dependant),
                 (optional)
                 parameter key : parameter value
-                [for all paramaeters in self.parameters]
+                [for all parameters in self.parameters]
             }
 
         """
@@ -213,6 +216,7 @@ class Molecule():
         Set adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
         Sets class attributes:
          adjacency: :class:`numpy array` - dim: num. of atoms x num. of atoms; entries are 1 for an edge (bond)
+        Update would use the vdws of the atoms to work out the bonding distances.
         """
 
         # Initialise variables
