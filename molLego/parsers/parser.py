@@ -3,7 +3,23 @@ class OutputParser():
     """
     Parser base class for calculation output file.
 
-    Has to set atom_ids, charge, 
+    All Parsers should have attributes:
+    
+    Attributes
+    ----------
+    atoms : :class:`list of str`
+        The atomic symbols of the atoms in the molecule.
+
+    atom_number : :class:`int`
+        The number of atoms in the molecule.
+ 
+    charge : :class:`int`
+        The charge of the molecule.
+
+    file_name : :class:`str`
+        The path to the parent log file.
+
+    Must contain methods below and set atom_ids, charge, 
     geometry and energy for molecule.
 
     """
