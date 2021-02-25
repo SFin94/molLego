@@ -54,6 +54,7 @@ class Reaction():
                 self.reaction_steps.append(step)
         
         self.reaction_paths = self.construct_reaction_paths(neighbours)
+        self.num_paths = len(self.reaction_paths)
             
     def get_reaction_path(self, path_index=None):
         """
@@ -76,13 +77,60 @@ class Reaction():
         if path_index is None:
             path_index = range(len(self.reaction_paths))
         elif isinstance(path_index, int):
-            atom_index = (path_index, )
+            path_index = (path_index, )
 
         paths = [self.reaction_paths[i] for i in path_index]
 
         for path in paths:
             yield path
-    
+
+    def get_df_repr(self, path_index=None):
+        """
+        Yield dict representation of reaction paths in reaction.
+
+        Parameters
+        ----------
+        path_index : :class: `iterable` of :class:`int`
+            The index(es) of the reaction paths required.
+            [default: ``None``] If ``None`` then returns all.
+            Can be single `int` to call name for single reaction path.
+
+        Yields
+        -------
+        df_rep : nested :class:`dict`
+            Properties for each reaction step in reaction path. Nested dict where each reaction step 
+            entry has the form:
+            {
+                file_name : path to parent output file
+                reaction path :  reaction path number
+                rx : reaction coordinate
+                e : energy (thermally corrected if known) (kJ/mol)
+                h/g/s : additional quantities if Molecule attributes
+                parameter key : parameter value
+                [for all parameters in self.parameters]
+            }
+
+        """
+        # Set to all atoms is atom_index is None.
+        if path_index is None:
+            path_index = range(len(self.reaction_paths))
+        elif isinstance(path_index, int):
+            atom_index = (path_index, )
+
+        paths = (self.reaction_paths[x] for x in path_index)
+        
+        for i, path in enumerate(paths):
+            df_rep = {}
+            rx = np.linspace(0, 1, len(path))
+        
+            # Get df rep for each reaction step.
+            for j, step in enumerate(path):
+                step_df_rep = step.get_df_repr()
+                step_df_rep['reaction path'] = path_index[i]
+                df_rep[rx[j]] = step_df_rep
+            
+            yield df_rep
+
     def _track_reaction_path(self, 
                              current_step, 
                              adjacency, 
@@ -192,8 +240,9 @@ class Reaction():
         reaction_path = []
         for step in path_list:
             reaction_path.append(self.reaction_steps[step])
-
+    
         self.reaction_paths.append(reaction_path)
+        self.num_paths += 1
 
     def form_reaction_step(self, molecules):
         """
