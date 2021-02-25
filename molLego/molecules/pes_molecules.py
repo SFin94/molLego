@@ -2,7 +2,6 @@
 """Module containing trajectory/PES specific Molecule child classes."""
 
 import molLego.utilities.geom as geom
-from molLego.parsers.parse_gaussian import GaussianLog
 from molLego.molecules.molecule import Molecule
 
 class PESStep():
