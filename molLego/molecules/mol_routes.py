@@ -7,6 +7,7 @@ import itertools
 import molLego.parsers.parse_gaussian as pgauss
 import molLego.utilities.geom as geom
 from molLego.molecules.molecule import Molecule
+from molLego.molecules.reactions import Reaction
 
 def construct_mols(system_file, parser, molecule_type=Molecule):
     """
@@ -48,10 +49,9 @@ def construct_mols(system_file, parser, molecule_type=Molecule):
     with open(system_file, 'r') as infile:
         for system_line in infile:
             if system_line[0] != '#':
-                # Set name and files from input line.
-                mol_files = system_line.split()[1].split(',')
-                
+            
                 # Create molecules for each file.
+                mol_files = system_line.split()[1].split(',')
                 for mol in mol_files:
                     mol_names.append(system_line.split()[0])
                     molecules.append(molecule_type(output_file=mol, parser=parser))
@@ -105,7 +105,7 @@ def mols_to_dataframe(mols, mol_names=None,
     molecule_df = calc_relative(molecule_df, mol_zero=mol_zero)
 
     # Write dataframe to file if filename provided.
-    if save != None:
+    if save is not None:
         molecule_df.to_csv(save + '.csv')
 
     return molecule_df
@@ -138,7 +138,7 @@ def calc_relative(molecule_df, quantities=None, mol_zero=None):
 
     """
     # Set quantities to those present in dataframe is None given.
-    if quantities == None:
+    if quantities is None:
         all_quantities = ['e', 'h', 'g']
         present = np.asarray([x in list(molecule_df.columns)
                             for x in all_quantities])
@@ -146,7 +146,7 @@ def calc_relative(molecule_df, quantities=None, mol_zero=None):
 
     # Find zero value for quantities and set other values relative.
     for q in quantities:
-        if mol_zero != None:
+        if mol_zero is not None:
             zero = molecule_df[q, mol_zero]
         else:
             zero = molecule_df[q].min()
@@ -198,3 +198,136 @@ def parse_tracked_params(param_file, molecules=None):
             mol.set_parameters(tracked_params)
     
     return tracked_params
+
+def construct_reaction(system_file, parser, molecule_type=Molecule):
+    """
+    Create input for ReactionPath object defined by a system conf file.
+
+    The .conf file contains molecule names, output files to be parsed, 
+    and the molecule names of the following reaction steps.
+    Multiple files can be parsed for one reaction step by inclduing them
+    as csv.
+
+    Example formatting for a reaction: A + B --> C --> D + E
+        reactants A_output[.ext],reactant_D_output[.ext] int
+        int C_output[.ext] products
+        products D_output[.ext],E_output[.ext] 
+        
+    Where [.ext] must be compatiable with the parser specified.
+    Lines can be commented out with leading '#'.
+
+    Parameters
+    ----------
+    system_file : :class:`str`
+        File path/name to conf file containing system to parse.
+
+    parser : `OutputParser`
+        Parser class to use for calculation output.
+
+    molecule_type : `Molecule`
+        Molecule class to use for calculation output.
+
+    Returns
+    -------
+    molecules : :class:`dict` of :Molecule:
+        Molecule objects for each file in system conf file.
+
+    """
+    # Initialise variables
+    mol_names = []
+    molecules = []
+
+    # Process files and names in system conf file.
+    with open(system_file, 'r') as infile:
+        for system_line in infile:
+            if system_line[0] != '#':
+
+                # Set reaction step names and molecules.
+                raw_in = system_line.split()
+                mol_names.append(raw_in[0])
+                molecules = [molecule_type(output_file=mol,
+                             parser=parser) 
+                             for mol in raw_in[1].split(',')]
+                
+                # Set neighbour list.
+                step_neighbours = []
+                if len(raw_in) > 2:
+                    step_neighbours.append(raw_in[2].split(','))
+                else:
+                    step_neighbours.append([])
+    
+    # Convert step neighbours to reaction step indexes.
+    neighbour_indexes = []
+    for step in step_neighbours:
+        step_indexes = []
+        for i in step:
+            step_indexes.append(mol_names.index(i))
+        neighbour_indexes.append(step_indexes)
+
+    # Initialise reaction from system.
+    reaction_system = Reaction(molecules, neighbour_indexes)
+
+    return reaction_system
+
+def reaction_to_dataframe(reaction, save=None, 
+                          path_indexes=None, path_zero=None):
+    """
+    Create DataFrame of reactions steps in a Reaction.
+
+    Parameters
+    ----------
+    reaction : :Reaction:
+        Reaction system to send to dataframe.
+    
+    mol_names : `list of str` 
+        [Default=None]
+        If ``None`` then DataFrame index is Molecule file name.
+
+    save : `str`
+        [Default=None].
+        File name to write DataFrame to (w/out .csv).
+        If ``None`` then DataFrame is not written to file.
+
+    path_index : :class: `iterable` of :class:`int`
+        The index(es) of the reaction paths required.
+        [default: ``None``] If ``None`` then returns all.
+        Can be single `int` to call name for single reaction path.
+
+    path_zero : `str` or `int`
+        [Default=None]
+        Reaction step to calculate values relative too. 
+        File name or?
+        Or `int` index of Molecule in mols list.
+        If ``None`` relative values calculated w.r.t. lowest
+        value for each quantity.
+
+    Returns
+    -------
+    reaction_df : :pandas: `DataFrame`
+        DataFrame of all reaction paths in Reaction.
+     
+    """
+    # Intialise variables.
+    reaction_profile_df = pd.DataFrame()
+    if not isinstance(path_zero, (list, tuple)):
+        if path_indexes is not None:
+            path_zero = [path_zero]*len(path_indexes)
+        else:
+            path_zero = [path_zero]*reaction.num_paths
+    
+    # Create data frame representations.
+    for i, path_df_rep in enumerate(reaction.get_df_repr(path_indexes)):
+
+        # Set dict values as Rx column and make dataframe of all others.
+        path_df = pd.DataFrame(list(path_df_rep.values()))
+        path_df['rx'] = list(path_df_rep.keys())
+        path_df = calc_relative(path_df, path_zero[i])
+
+        # Add to full reaction profile dataframe.
+        reaction_profile_df = reaction_profile_df.append(path_df)
+
+    # Write dataframe to file if filename provided.
+    if save is not None:
+        reaction_profile_df.to_csv(save + '.csv')
+
+    return reaction_profile_df
