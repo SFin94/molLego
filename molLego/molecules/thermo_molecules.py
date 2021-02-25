@@ -25,21 +25,24 @@ class GaussianThermoMolecule(Molecule):
         A ``(N, 3)`` array of x, y, z coordinates for each atom.
         Where N is the number of atoms in the molecule.
     
-    e: :class:`float`
+    e : :class:`float`
+        The SCF Done energy of the molecule (a.u.).
+
+    e_therm : :class:`float`
         The thermally corrected energy of the molecule (kJ/mol).
     
-    escf: :class:`float`
-        The SCF Done energy of the molecule (a.u.).
-    
-    h: :class:`float`
+    h : :class:`float`
         The thermally corrected enthalpy of the molecule (kJ/mol).
     
-    g: :class:`float`
+    g : :class:`float`
         The thermally corrected Gibbs free energy of the molecule
         (kJ/mol).
     
-    s: :class:`float`
+    s : :class:`float`
         The entropy of the molecule (kJ/mol).
+
+    t : :class:`float`
+        The temperature the properties are calculated at.
     
     zpe: :class:`float`
         The Zero Point Energy of the molecule (kJ/mol).
@@ -71,15 +74,16 @@ class GaussianThermoMolecule(Molecule):
         self.atom_number = len(self.atom_ids)
         self.charge = properties['charge']
         self.geometry = properties['geom']
-        self.escf = properties['energy']
+        self.e = properties['energy']
         self.parameters = {}
 
         # Set additional thermodynamic attributes.
-        self.zpe = properties['thermo']['ZPE']
-        self.e = properties['thermo']['E']
-        self.h = properties['thermo']['H']
-        self.g = properties['thermo']['G']
-        self.s = properties['thermo']['S']
+        self.zpe = properties['thermo']['zpe']
+        self.e_therm = properties['thermo']['e_therm']
+        self.h = properties['thermo']['h']
+        self.g = properties['thermo']['g']
+        self.s = properties['thermo']['s']
+        self.t = properties['thermo']['t']
 
     def get_df_repr(self):
         """
@@ -91,7 +95,8 @@ class GaussianThermoMolecule(Molecule):
             Molecule properties in the format:
             {
                 file_name   : path to parent output file,
-                e : thermally corrected energy (kJ/mol),
+                e : SCF electronic energy (kJ/mol),
+                e_therm : thermally corrected energy (kJ/mol),
                 zpe : zero point energy (kJ/mol)
                 h : thermally corrected enthalpy (kJ/mol)
                 s : entropy (kJ/mol)
@@ -104,6 +109,7 @@ class GaussianThermoMolecule(Molecule):
         """
         df_rep = {'file_name': self.parser.file_name,
                   'e': self.e,
+                  'e_therm': self.e_therm,
                   'zpe': self.zpe,
                   'h': self.h,
                   's': self.s,

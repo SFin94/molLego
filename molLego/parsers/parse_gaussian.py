@@ -421,17 +421,17 @@ class GaussianLog(OutputParser):
         :class:`dict of float`
             The thermodynamic data in the format:
             {
-                t   : temperature,
-                zpe : zero point energy (kJ/mol),
-                e   : thermally corrected energy (kJ/mol),
-                h   : thermally corrected enthalpy (kJ/mol),
-                g   : thermally corrected free energy (kJ/mol),
-                s   : entropy (kJ/mol)
+                t       : temperature,
+                zpe     : zero point energy (kJ/mol),
+                e_therm : thermally corrected energy (kJ/mol),
+                h       : thermally corrected enthalpy (kJ/mol),
+                g       : thermally corrected free energy (kJ/mol),
+                s       : entropy (kJ/mol)
             }
 
         """
         # Initialise variables
-        quantities = ['t', 'zpe', 'e', 'h', 'g', 's']
+        quantities = ['t', 'zpe', 'e_therm', 'h', 'g', 's']
         thermochemistry = {quantity: 0.0 for quantity in quantities}
 
         # Skip to temperature line and set temperature
