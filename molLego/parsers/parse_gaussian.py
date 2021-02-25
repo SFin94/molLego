@@ -44,9 +44,6 @@ class GaussianLog(OutputParser):
     charge : :class:`int`
         The charge of the molecule.
 
-    elements : :class:`list of str`
-        The list of elements present in the molecule.
-
     file_name : :class:`str`
         The path to the parent log file.
 
@@ -424,28 +421,28 @@ class GaussianLog(OutputParser):
         :class:`dict of float`
             The thermodynamic data in the format:
             {
-                T   : temperature,
-                ZPE : zero point energy (kJ/mol),
-                E   : thermally corrected energy (kJ/mol),
-                H   : thermally corrected enthalpy (kJ/mol),
-                G   : thermally corrected free energy (kJ/mol),
-                S   : entropy (kJ/mol)
+                t   : temperature,
+                zpe : zero point energy (kJ/mol),
+                e   : thermally corrected energy (kJ/mol),
+                h   : thermally corrected enthalpy (kJ/mol),
+                g   : thermally corrected free energy (kJ/mol),
+                s   : entropy (kJ/mol)
             }
 
         """
         # Initialise variables
-        quantities = ['T', 'ZPE', 'E', 'H', 'G', 'S']
+        quantities = ['t', 'zpe', 'e', 'h', 'g', 's']
         thermochemistry = {quantity: 0.0 for quantity in quantities}
 
         # Skip to temperature line and set temperature
         for _ in range(2):
             line = next(input)
-        thermochemistry['T'] = float(line[15:22])
+        thermochemistry['t'] = float(line[15:22])
 
-        # Skip to ZPE line and set ZPE
+        # Skip to zpe line and set zpe
         while 'Zero-point correction' not in line:
             line = next(input)
-        thermochemistry['ZPE'] = float(line[50:58])
+        thermochemistry['zpe'] = float(line[50:58])
 
         # Set the thermally corrected E, H, G.
         [next(input) for x in range(0, 4)]
@@ -453,8 +450,8 @@ class GaussianLog(OutputParser):
             thermochemistry[quantity] = float(next(input)[53:].strip())
 
         # Calculate TdS
-        thermochemistry['S'] = (thermochemistry['H'] - thermochemistry['G']) \
-            / thermochemistry['T']
+        thermochemistry['s'] = (thermochemistry['h'] - thermochemistry['g']) \
+            / thermochemistry['t']
 
         # Convert to kJ/mol
         for quantity in thermochemistry:
@@ -477,7 +474,7 @@ class GaussianLog(OutputParser):
 
         """
         # Initialise variables.
-        step_result = {}
+        properties = {}
 
         # Mapping of functions to property.
         pull_functions = {
@@ -500,9 +497,9 @@ class GaussianLog(OutputParser):
                 # Check for property in the line and set property value.
                 for prop, flag in job_property_flags.items():
                     if flag in line:
-                        step_result[prop] = pull_functions[prop](infile, line)
+                        properties[prop] = pull_functions[prop](infile, line)
             
-            return step_result
+            return properties
 
     def _pull_relaxed_scan(self, current_line, infile):
         """
