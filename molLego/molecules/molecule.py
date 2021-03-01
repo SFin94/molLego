@@ -210,23 +210,23 @@ class Molecule():
         self.geom = self.geom[reindex, :]
         self.atom_ids = [self.atom_ids[i] for i in reindex]
 
-    def set_adjacency(self, distance=2.0):
+    # def set_adjacency(self, distance=2.0):
 
-        """
-        Set adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
-        Sets class attributes:
-         adjacency: :class:`numpy array` - dim: num. of atoms x num. of atoms; entries are 1 for an edge (bond)
-        Update would use the vdws of the atoms to work out the bonding distances.
-        """
+    #     """
+    #     Set adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
+    #     Sets class attributes:
+    #      adjacency: :class:`numpy array` - dim: num. of atoms x num. of atoms; entries are 1 for an edge (bond)
+    #     Update would use the vdws of the atoms to work out the bonding distances.
+    #     """
 
-        # Initialise variables
-        self.adjacency = np.zeros((len(self.geom), len(self.geom)))
+    #     # Initialise variables
+    #     self.adjacency = np.zeros((len(self.geom), len(self.geom)))
 
-        # Calculates distance between atoms and if smaller than the distance tolerence a bond is assumed (matrix entry set to 1)
-        for i, atom_i in enumerate(self.geom):
-            for j, atom_j in enumerate(self.geom[i+1:]):
-                self.adjacency[i, j+i+1] =  (geom.calc_dist(atom_i, atom_j) < distance)
-        self.adjacency += self.adjacency.transpose()
+    #     # Calculates distance between atoms and if smaller than the distance tolerence a bond is assumed (matrix entry set to 1)
+    #     for i, atom_i in enumerate(self.geom):
+    #         for j, atom_j in enumerate(self.geom[i+1:]):
+    #             self.adjacency[i, j+i+1] =  (geom.calc_dist(atom_i, atom_j) < distance)
+    #     self.adjacency += self.adjacency.transpose()
 
 
 
