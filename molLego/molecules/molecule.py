@@ -90,10 +90,12 @@ class Molecule():
         if not any(isinstance(x, (list, tuple)) for x in params):
             params = [params]
 
+        # Set parameter key as atom_ID+atom_index'-'atom_ID+atom_index [-...-...]
         for par in params:
-            # Set parameter key as atom_ID+atom_index'-'atom_ID+atom_index [-...-...]
             param_keys.append('-'.join([self.atom_ids[i] + str(i) for i in par]))
-            param_vals = geom.calc_param(par, self.geometry)
+        
+        # Calculate parameters.
+        param_vals = geom.calc_param(params, self.geometry)
 
         # Update parameter dict.
         self.parameters.update(dict(zip(param_keys, param_vals)))
@@ -210,9 +212,11 @@ class Molecule():
         self.geom = self.geom[reindex, :]
         self.atom_ids = [self.atom_ids[i] for i in reindex]
 
-    # def set_adjacency(self, distance=2.0):
-
+    # def set_adjacency(self, d_tol=2.0):
     #     """
+    #     Set adjacency matrix for the bond topology of the molecule.
+
+    #     A distance metric is used to locate possible bonds.
     #     Set adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
     #     Sets class attributes:
     #      adjacency: :class:`numpy array` - dim: num. of atoms x num. of atoms; entries are 1 for an edge (bond)
