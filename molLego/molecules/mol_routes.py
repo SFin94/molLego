@@ -139,7 +139,7 @@ def calc_relative(molecule_df, quantities=None, mol_zero=None):
     """
     # Set quantities to those present in dataframe is None given.
     if quantities is None:
-        all_quantities = ['e', 'h', 'g']
+        all_quantities = ['e', 'e_therm', 'h', 'g']
         present = np.asarray([x in list(molecule_df.columns)
                             for x in all_quantities])
         quantities = [all_quantities[x] for x in np.where(present)[0]]
