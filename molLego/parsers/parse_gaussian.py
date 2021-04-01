@@ -434,7 +434,7 @@ class GaussianLog(OutputParser):
         quantities = ['t', 'zpe', 'e_therm', 'h', 'g', 's']
         thermochemistry = {quantity: 0.0 for quantity in quantities}
 
-        # Skip to temperature line and set temperature
+        # Skip to temperature line and set temperature.
         for _ in range(2):
             line = next(input)
         thermochemistry['t'] = float(line[15:22])
@@ -449,12 +449,12 @@ class GaussianLog(OutputParser):
         for quantity in quantities[2:-1]:
             thermochemistry[quantity] = float(next(input)[53:].strip())
 
-        # Calculate TdS
+        # Calculate TdS.
         thermochemistry['s'] = (thermochemistry['h'] - thermochemistry['g']) \
             / thermochemistry['t']
 
-        # Convert to kJ/mol
-        for quantity in thermochemistry:
+        # Convert to kJ/mol apart from T.
+        for quantity in quantities[1:]:
             thermochemistry[quantity] *= 2625.5
 
         return thermochemistry
