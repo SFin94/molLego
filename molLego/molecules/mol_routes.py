@@ -159,8 +159,8 @@ def parse_tracked_params(param_file, molecules=None):
     Parse paramaters from input file and calculate values.
 
     Format of input file:
-            param_name (atom_types) atom1_ind atom2_ind [atom3_ind atom4_ind]
-            E.g. OPSC 3 1 2 7
+        param_name atom1_ind atom2_ind [atom3_ind atom4_ind]
+        E.g. OPSC 3 1 2 7
 
     Parameters
     ----------
@@ -168,11 +168,11 @@ def parse_tracked_params(param_file, molecules=None):
         Path of input file containg parameters to be calculated.
     
         Format of input file:
-             param_name (atom_types) atom1_ind atom2_ind [atom3_ind atom4_ind]
-             E.g. OPSC 3 1 2 7
+            param_name atom1_ind atom2_ind [atom3_ind atom4_ind]
+            E.g. OPSC 3 1 2 7
 
     molecules: :class:`list` of :Molecule:
-        The molecules to calcualte the parameters values for.
+        The molecules to calculate parameters values for.
         [Default=None]
        
     Returns
@@ -279,7 +279,7 @@ def reaction_to_dataframe(reaction, save=None,
     reaction : :Reaction:
         Reaction system to send to dataframe.
     
-    mol_names : `list of str` 
+    mol_names : :class:`list` of :class:`str` 
         [Default=None]
         If ``None`` then DataFrame index is Molecule file name.
 
