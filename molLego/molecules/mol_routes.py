@@ -91,6 +91,10 @@ def mols_to_dataframe(mols, mol_names=None,
         DataFrame of Molecules and properties.
      
     """
+    # Handle possible nested dicts.
+    if not isinstance(mols, (tuple, list)):
+        mols = [mols]
+
     # Create data frame representations.
     mol_data = [mol.get_df_repr() for mol in mols]
     
