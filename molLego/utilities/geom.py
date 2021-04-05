@@ -16,7 +16,7 @@ def calc_param(param_set, geometry):
 
     Parameters
     ----------
-    param_set : nested list of ints
+    param_set : nested :class:`list` of `int`
         Atom indexes for each parameter to be calculated.
     geometry : `numpy.ndarray`
         A `(numAtoms, 3)` array of x, y, z coordinates for each atom.

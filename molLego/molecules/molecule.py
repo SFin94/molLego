@@ -69,7 +69,7 @@ class Molecule():
         """
         Calculate geometric parameters (bonds, angles, dihedrals).
 
-        Parameters saved in `dict`.
+        Parameters are saved in `dict`.
         Where Key is `str` of each atom_id and atom_index.
         E.g. C1-H2
         Value is the value of the geometric parameter.
@@ -78,8 +78,8 @@ class Molecule():
         ----------
         params : :class:`iterable` of :class:`int`
             The atom indexes defining the geometric parameter.
-            Can be either a nested iterable is multiple parameters,
-            or a single iterable if only one parameter is required.
+            Can be either a nested iterable if multiple parameters,
+            or a single iterable if only one parameter required.
 
         """
         # Initialise values.
