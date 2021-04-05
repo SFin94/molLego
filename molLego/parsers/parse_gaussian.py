@@ -32,7 +32,7 @@ class GaussianLog(OutputParser):
 
     Attributes
     ----------
-    atoms : :class:`list of str`
+    atom_ids : :class:`list` of `str`
         The atomic symbols of the atoms in the molecule.
 
     atom_number : :class:`int`
@@ -72,39 +72,35 @@ class GaussianLog(OutputParser):
         self.normal_termination = self._check_normal_termination()
 
         # Use end of file log for normal termination:
+        # if self.normal_termination:
         if self.normal_termination:
-            output, job_input = self._pull_end_output()
-            output = output.split('\\')
+            try:
+                # Set calculation details.
+                output, job_input = self._pull_end_output()
+                output = output.split('\\')
+                self.method, self.basis_set = output[4:6]
+                
+                # Set molecule details.
+                atom_number, elements, charge = parse_mol_formula(output[6])
+                self.atom_number = atom_number
+                self.charge = charge
 
-            # Set calculation details.
-            self.method, self.basis_set = output[4:6]
-
-            # Set molecule details.
-            atom_number, elements, charge = parse_mol_formula(output[6])
-            self.atom_number = atom_number
-            self.charge = charge
-            self.atom_ids = self._pull_atom_ids()
-
-            print(
-                'Normal termination output found, '
-                'all attributes set.'
-                )
-
+                print(
+                    'Normal termination output found, '
+                    'all attributes set.'
+                    )
+            # Try to use the beginning of the file job input data:
+            except:
+                job_input, self.atom_number = self._set_from_start()
+        
         # Try to use the beginning of the file job input data:
         else:
             try:
-                job_input = self._pull_start_output()
+                job_input, self.atom_number = self._set_from_start()
             
-                # Set MP2 as method if present for correct energy parsing.
-                if 'mp2' in job_input:
-                    self.method = 'mp2'
-
-                # Set number of atoms.
-                self.atom_number = self.pull_atom_number()
-                
                 print(
-                    'Normal termination output not present, '
-                    'fewer attributes set using input information.'
+                'Normal termination output not present, '
+                'fewer attributes set using input information.'
                     )
             except:
                 raise LogFileError(
@@ -113,15 +109,15 @@ class GaussianLog(OutputParser):
 
         # Set attributes using job input (independant of normal termination).
         self.job_type = self._job_from_input(job_input)
+        
+        # Set atom IDs.
+        self.atom_ids = self._pull_atom_ids()
 
         # Process moderedundant input is present in job input.
         if 'modredundant' in job_input:
             scan_input = self.pull_scan_input()
             if scan_input:
                 self.job_type = 'scan_relaxed'
-
-        # Set atom IDs.
-        self.atom_ids = self._pull_atom_ids()
 
     def _check_normal_termination(self):
         """
@@ -136,6 +132,18 @@ class GaussianLog(OutputParser):
         end_line = readlines_reverse(self.file_name)
         next(end_line)
         return True if "Normal termination" in next(end_line) else False
+
+    def _set_from_start(self):
+        
+        job_input = self._pull_start_output()
+        
+        # Set MP2 as method if present for correct energy parsing.
+        if 'mp2' in job_input:
+            self.method = 'mp2'
+
+        # Set number of atoms.
+        atom_number = self.pull_atom_number()
+        return job_input, atom_number
 
     def _pull_end_output(self):
         """
