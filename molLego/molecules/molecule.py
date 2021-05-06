@@ -209,7 +209,7 @@ class Molecule():
             List of new index positions for each atom.
     
         """
-        self.geom = self.geom[reindex, :]
+        self.geometry = self.geometry[reindex, :]
         self.atom_ids = [self.atom_ids[i] for i in reindex]
 
     # def set_adjacency(self, d_tol=2.0):
