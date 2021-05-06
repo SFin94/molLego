@@ -18,10 +18,14 @@ class Reaction():
         The Molecules composing the reaction steps.
         Where multiple molecules form a single reaction step
         the should be contained in a nested list.
+    
+    reaction_paths : :class:`list` of :Molecule:
+        List of reaction paths. 
+        Each path is composed of the reaction steps.
         
     """
 
-    def __init__(self, reaction_steps, neighbours):
+    def __init__(self, reaction_steps, neighbours, step_names):
         """
         Initialise a Molecule from calculation output file.
 
@@ -29,8 +33,8 @@ class Reaction():
         ----------
         reaction_steps : :class:`list` of :Molecule:
             The Molecules composing the reaction steps.
-            Where multiple molecules form a single reaction step
-            the should be contained in a nested list.
+            Either single `Molecule` as entry or list of `Molecule`
+            if multiple molecules form a single reaction step.
 
         neighbours : nested :class:`list` of :class:`int`
             A list of indexes of the upstream connecting reaction 
@@ -40,14 +44,14 @@ class Reaction():
 
         """
         self.num_steps = len(reaction_steps)
-
+        self.step_names = step_names
+        
         # Initialise reaction steps from molecules.
         self.reaction_steps= []
         for step in reaction_steps:
             
             # Handle is multiple molecules for single reaction step.
             if isinstance(step, (list,tuple)):
-                print(step)
                 self.reaction_steps.append(self.form_reaction_step(
                                            step))
             else:

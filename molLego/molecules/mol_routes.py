@@ -70,7 +70,7 @@ def mols_to_dataframe(mols, mol_names=None,
     
     mol_names : `list of str` 
         [Default=None]
-        If ``None`` then DataFrame index is Molecule file name.
+        If ``None`` then Default DataFrame index.
 
     save : `str`
         [Default=None].
@@ -213,7 +213,7 @@ def construct_reaction(system_file, parser, molecule_type=Molecule):
     as csv.
 
     Example formatting for a reaction: A + B --> C --> D + E
-        reactants A_output[.ext],reactant_D_output[.ext] int
+        reactants A_output[.ext],B_output[.ext] int
         int C_output[.ext] products
         products D_output[.ext],E_output[.ext] 
         
@@ -233,13 +233,14 @@ def construct_reaction(system_file, parser, molecule_type=Molecule):
 
     Returns
     -------
-    molecules : :class:`dict` of :Molecule:
-        Molecule objects for each file in system conf file.
+    `Reaction` :
+        Reaction object for system defined in conf file.
 
     """
     # Initialise variables
     mol_names = []
     molecules = []
+    step_neighbours = []
 
     # Process files and names in system conf file.
     with open(system_file, 'r') as infile:
@@ -249,17 +250,16 @@ def construct_reaction(system_file, parser, molecule_type=Molecule):
                 # Set reaction step names and molecules.
                 raw_in = system_line.split()
                 mol_names.append(raw_in[0])
-                molecules = [molecule_type(output_file=mol,
+                molecules.append([molecule_type(output_file=mol,
                              parser=parser) 
-                             for mol in raw_in[1].split(',')]
+                             for mol in raw_in[1].split(',')])
                 
                 # Set neighbour list.
-                step_neighbours = []
                 if len(raw_in) > 2:
                     step_neighbours.append(raw_in[2].split(','))
                 else:
                     step_neighbours.append([])
-    
+
     # Convert step neighbours to reaction step indexes.
     neighbour_indexes = []
     for step in step_neighbours:
@@ -269,11 +269,10 @@ def construct_reaction(system_file, parser, molecule_type=Molecule):
         neighbour_indexes.append(step_indexes)
 
     # Initialise reaction from system.
-    reaction_system = Reaction(molecules, neighbour_indexes)
+    return Reaction(molecules, neighbour_indexes, mol_names)
 
-    return reaction_system
 
-def reaction_to_dataframe(reaction, save=None, 
+def reaction_to_dataframe(reaction, save=None, mol_names=None,
                           path_indexes=None, path_zero=None):
     """
     Create DataFrame of reactions steps in a Reaction.
@@ -285,7 +284,7 @@ def reaction_to_dataframe(reaction, save=None,
     
     mol_names : :class:`list` of :class:`str` 
         [Default=None]
-        If ``None`` then DataFrame index is Molecule file name.
+        If ``None`` then Default DataFrame index.
 
     save : `str`
         [Default=None].
@@ -319,11 +318,13 @@ def reaction_to_dataframe(reaction, save=None,
         else:
             path_zero = [path_zero]*reaction.num_paths
     
+    ### Need to sort index out for reaction steps.
+
     # Create data frame representations.
     for i, path_df_rep in enumerate(reaction.get_df_repr(path_indexes)):
 
         # Set dict values as Rx column and make dataframe of all others.
-        path_df = pd.DataFrame(list(path_df_rep.values()))
+        path_df = pd.DataFrame(list(path_df_rep.values()), index=mol_names)
         path_df['rx'] = list(path_df_rep.keys())
         path_df = calc_relative(path_df, path_zero[i])
 
