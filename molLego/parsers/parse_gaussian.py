@@ -180,7 +180,7 @@ class GaussianLog(OutputParser):
 
         Returns
         -------
-        output : `str`
+        output : :class:`str`
             Calculation input line.
 
         """
@@ -201,7 +201,7 @@ class GaussianLog(OutputParser):
 
         Parameters
         ----------
-        job_input : `str`
+        job_input : :class:`str`
             Job input line for calculation.
         
         Returns
@@ -240,7 +240,7 @@ class GaussianLog(OutputParser):
 
         Returns
         -------
-        job_property_flags : `dict`
+        job_property_flags : :class:`dict`
             A `dict`, where the key is a property type and the value
             is the corresponding string flag for parsing the property from
             the Gaussian log file.
@@ -268,7 +268,7 @@ class GaussianLog(OutputParser):
 
         Returns
         -------
-        :class:`list of str`
+        :class:`list` of `str`
             The IDs of the atoms in the molecule.
 
         """
@@ -302,10 +302,10 @@ class GaussianLog(OutputParser):
         Parameters
         ----------
         infile : iter object
-            Lines of file
+            Lines of file.
 
-        current_line
-            Current line in file
+        current_line : :class:`str`
+            Current line in file.
 
         Returns
         -------
@@ -322,10 +322,10 @@ class GaussianLog(OutputParser):
         Parameters
         ----------
         infile : iter object
-            Lines of file
+            Lines of file.
 
-        current_line
-            Current line in file
+        current_line : :class:`str`
+            Current line in file.
 
         Returns
         -------
@@ -351,17 +351,17 @@ class GaussianLog(OutputParser):
 
         return np.asarray(atom_coords)
 
-    def _pull_energy(self, input, current_line):
+    def _pull_energy(self, infile, current_line):
         """
         Pull the energy from the log file.
 
         Parameters
         ----------
         infile : iter object
-            Lines of file
+            Lines of file.
 
-        current_line
-            Current line in file
+        current_line : :class:`str`
+            Current line in file.
 
         Returns
         -------
@@ -371,17 +371,17 @@ class GaussianLog(OutputParser):
         """
         return float(current_line.split('=')[1].split()[0])
 
-    def _pull_mp2_energy(self, input, current_line):
+    def _pull_mp2_energy(self, infile, current_line):
         """
         Pull the energy from the log file.
 
         Parameters
         ----------
         infile : iter object
-            Lines of file
+            Lines of file.
 
-        current_line
-            Current line in file
+        current_line : :class:`str`
+            Current line in file.
 
         Returns
         -------
@@ -392,17 +392,17 @@ class GaussianLog(OutputParser):
         raw_base, raw_power = current_line.split('=')[2].strip().split('D')
         return float(raw_base)*np.power(10, float(raw_power))
 
-    def _pull_optimised(self, input, current_line):
+    def _pull_optimised(self, infile, current_line):
         """
         Pull optimised information from the log file.
 
         Parameters
         ----------
         infile : iter object
-            Lines of file
+            Lines of file.
 
-        current_line
-            Current line in file
+        current_line : :class:`str`
+            Current line in file.
 
         Returns
         -------
@@ -412,17 +412,17 @@ class GaussianLog(OutputParser):
         """
         return ('Non-Optimized' not in current_line)
 
-    def _pull_thermo(self, input, current_line):
+    def _pull_thermo(self, infile, current_line):
         """
         Pull the thermodynamic information from the log file.
 
         Parameters
         ----------
         infile : iter object
-            Lines of file
+            Lines of file.
 
-        current_line
-            Current line in file
+        current_line : :class:`str`
+            Current line in file.
 
         Returns
         -------
@@ -444,18 +444,18 @@ class GaussianLog(OutputParser):
 
         # Skip to temperature line and set temperature.
         for _ in range(2):
-            line = next(input)
+            line = next(infile)
         thermochemistry['t'] = float(line[15:22])
 
         # Skip to zpe line and set zpe
         while 'Zero-point correction' not in line:
-            line = next(input)
+            line = next(infile)
         thermochemistry['zpe'] = float(line[50:58])
 
         # Set the thermally corrected E, H, G.
-        [next(input) for x in range(0, 4)]
+        [next(infile) for x in range(0, 4)]
         for quantity in quantities[2:-1]:
-            thermochemistry[quantity] = float(next(input)[53:].strip())
+            thermochemistry[quantity] = float(next(infile)[53:].strip())
 
         # Calculate TdS.
         thermochemistry['s'] = (thermochemistry['h'] - thermochemistry['g']) \
@@ -509,17 +509,17 @@ class GaussianLog(OutputParser):
             
             return properties
 
-    def _pull_relaxed_scan(self, current_line, infile):
+    def _pull_relaxed_scan(self, infile, current_line):
         """
         Pull relaxed scan information from a log file.
         
         Parameters
         ----------
         infile : iter object
-            Lines of file
+            Lines of file.
 
-        current_line
-            Current line in file
+        current_line : :class:`str`
+            Current line in file.
 
         Returns
         -------
@@ -598,8 +598,11 @@ class GaussianLog(OutputParser):
 
         Parameters
         ----------
-        infile : :class:`iter`
-            Lines of the log file.
+        infile : iter object
+            Lines of file.
+
+        current_line : :class:`str`
+            Current line in file.
 
         Returns
         -------
@@ -741,7 +744,7 @@ class GaussianLog(OutputParser):
         with open(self.file_name, 'r') as infile:
             for line in infile:
                 if parse_flag in line:
-                    raw_scan_input = pull_function(line, infile)
+                    raw_scan_input = pull_function(infile, line)
                     break
 
         return process_function(raw_scan_input)
