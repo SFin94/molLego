@@ -80,8 +80,7 @@ class PESStep():
 
         """
         # Calculate parameter values.
-        for par in params:
-            param_vals = geom.calc_param(par, self.geometry)
+        param_vals = geom.calc_param(params, self.geometry)
         
         # Update parameter dict.
         self.parameters.update(dict(zip(param_keys, param_vals)))
@@ -196,9 +195,12 @@ class PESMolecule(Molecule):
         pes_full = self.parser.pull_trajectory(calculation_steps, opt)
         self.pes = []
         for step, results in pes_full.items():
-            self.pes.append(PESStep(step, results['geom'],
-                            results['energy'], results['opt']))
-
+            if 'opt' in results.keys():
+                self.pes.append(PESStep(step, results['geom'],
+                                results['energy'], results['opt']))
+            else:
+                self.pes.append(PESStep(step, results['geom'],
+                                results['energy']))
         # Calculate parameters for scan parameters.
         scan_params = [x['atom_inds'] for x in self.scan_info.values()]
         self.set_parameters(scan_params)
@@ -230,7 +232,7 @@ class PESMolecule(Molecule):
         
         # Calculate parameter value for each step on PES.
         for pes_step in self.pes:
-           pes_step.set_parameters(params, param_keys)  
+            pes_step.set_parameters(params, param_keys)  
 
     def get_pes_step(self, step_index=None):
         """
