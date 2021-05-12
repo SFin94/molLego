@@ -282,11 +282,11 @@ def reaction_to_dataframe(reaction, save=None, mol_names=None,
     reaction : :Reaction:
         Reaction system to send to dataframe.
     
-    mol_names : :class:`list` of :class:`str` 
+    mol_names : :class:`list` of `str` 
         [Default=None]
         If ``None`` then Default DataFrame index.
 
-    save : `str`
+    save : :class:`str`
         [Default=None].
         File name to write DataFrame to (w/out .csv).
         If ``None`` then DataFrame is not written to file.
@@ -296,7 +296,7 @@ def reaction_to_dataframe(reaction, save=None, mol_names=None,
         [default: ``None``] If ``None`` then returns all.
         Can be single `int` to call name for single reaction path.
 
-    path_zero : `str` or `int`
+    path_zero : :class:`str` or :class:`int`
         [Default=None]
         Reaction step to calculate values relative too. 
         File name or?
@@ -317,14 +317,13 @@ def reaction_to_dataframe(reaction, save=None, mol_names=None,
             path_zero = [path_zero]*len(path_indexes)
         else:
             path_zero = [path_zero]*reaction.num_paths
-    
-    ### Need to sort index out for reaction steps.
 
+    # Get path indexes for data frame from path step names.
+    path_index = reaction.get_path_step_names(path_indexes)
+    print(path_index)
     # Create data frame representations.
     for i, path_df_rep in enumerate(reaction.get_df_repr(path_indexes)):
-
-        # Set dict values as Rx column and make dataframe of all others.
-        path_df = pd.DataFrame(list(path_df_rep.values()), index=mol_names)
+        path_df = pd.DataFrame(list(path_df_rep.values()), index=path_index[i])
         path_df['rx'] = list(path_df_rep.keys())
         path_df = calc_relative(path_df, path_zero[i])
 

@@ -23,6 +23,9 @@ class Reaction():
         List of reaction paths. 
         Each path is composed of the reaction steps.
         
+    step_names : :class:`list` of `str`
+        List of names for each reaction step.
+
     """
 
     def __init__(self, reaction_steps, neighbours, step_names):
@@ -87,6 +90,38 @@ class Reaction():
 
         for path in paths:
             yield path
+
+    def get_path_step_names(self, path_index=None):
+        """
+        Return names for each step in a reaction path.
+
+        Parameters
+        ----------
+        path_index : :class: `iterable` of :class:`int`
+            The index(es) of the reaction paths required.
+            [default: ``None``] If ``None`` then returns all.
+            Can be single `int` to call name for single reaction path.
+
+        Returns
+        -------
+        :class: `list` of `str`
+            List of names of the steps in the reaction path.
+
+        """
+        # Set to all atoms is atom_index is None.
+        if path_index is None:
+            path_index = range(len(self.reaction_paths))
+        elif isinstance(path_index, int):
+            path_index = (path_index, )
+
+        # Set path and get step names from step indexes along path.
+        path_names = []
+        paths = [self.reaction_paths[i] for i in path_index]
+        for path in paths:
+            step_indexes = [self.reaction_steps.index(x) for x in path]
+            path_names.append([self.step_names[i] for i in step_indexes])
+        
+        return path_names
 
     def get_df_repr(self, path_index=None):
         """
@@ -238,7 +273,7 @@ class Reaction():
         Parameters
         ----------
         path_list : :class:`list` of :class:`int`
-            New reaction path in terms of the reaction step indexes.
+            New reaction path specified by reaction step indexes.
 
         """
         reaction_path = []
