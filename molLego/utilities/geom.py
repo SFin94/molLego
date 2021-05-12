@@ -29,9 +29,9 @@ def calc_param(param_set, geometry):
     """
     # Initialise variables.
     param_val = []
-
-    # Checks for multiple paramters.
-    if type(param_set[0]) != list:
+    
+    # Handle if single parameter.
+    if not any(isinstance(x, (list, tuple)) for x in param_set):
         param_set = [param_set]
 
     # Calculate geometric paramter for the number of atom indexes specified.
