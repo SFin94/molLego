@@ -1,11 +1,13 @@
 """Module containing Molecule definiton."""
 import sys
 import numpy as np
+import scipy
+# from rdkit.Chem import GetPeriodicTable
 import molLego.utilities.geom as geom
 
-__ATOM_ELEMENTS__ = ['h',  'he', 'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne', 'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar', 'k',  'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr', 'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag', 'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe', 'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w',  're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn', 'fr', 'ra', 'ac', 'th', 'pa', 'u', 'np', 'pu']
+__ATOM_ELEMENTS__ = ['h',  'he', 'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne', 'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar', 'k',  'ca', 'sc', 'ti', 'v', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr', 'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag', 'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe', 'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w',  're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn', 'fr', 'ra', 'ac', 'th', 'pa', 'u', 'np', 'pu']
 
-
+__COVALENT_RADII__ = {'h': 0.23, 'he': 0.93, 'li': 0.68, 'be': 0.35, 'b': 0.83, 'c': 0.68, 'n': 0.68, 'o': 0.68, 'f': 0.64, 'ne': 1.12, 'na': 0.97, 'mg': 1.1, 'al': 1.35, 'si': 1.2, 'p': 0.75, 's': 1.02, 'cl': 0.99, 'ar': 1.57, 'k': 1.33, 'ca': 0.99, 'sc': 1.44, 'ti': 1.47, 'v': 1.33, 'cr': 1.35, 'mn': 1.35, 'fe': 1.34, 'co': 1.33, 'ni': 1.5, 'cu': 1.52, 'zn': 1.45, 'ga': 1.22, 'ge': 1.17, 'as': 1.21, 'se': 1.22, 'br': 1.21, 'kr': 1.91, 'rb': 1.47, 'sr': 1.12, 'y': 1.78, 'zr': 1.56, 'nb': 1.48, 'mo': 1.47, 'tc': 1.35, 'ru': 1.4, 'rh': 1.45, 'pd': 1.5, 'ag': 1.59, 'cd': 1.69, 'in': 1.63, 'sn': 1.46, 'sb': 1.46, 'te': 1.47, 'i': 1.4, 'xe': 1.98, 'cs': 1.67, 'ba': 1.34, 'la': 1.87, 'ce': 1.83, 'pr': 1.82, 'nd': 1.81, 'pm': 1.8, 'sm': 1.8, 'eu': 1.99, 'gd': 1.79, 'tb': 1.76, 'dy': 1.75, 'ho': 1.74, 'er': 1.73, 'tm': 1.72, 'yb': 1.94, 'lu': 1.72, 'hf': 1.57, 'ta': 1.43, 'w': 1.37, 're': 1.35, 'os': 1.37, 'ir': 1.32, 'pt': 1.5, 'au': 1.5, 'hg': 1.7, 'tl': 1.55, 'pb': 1.54, 'bi': 1.54, 'po': 1.68, 'at': 1.7, 'rn': 2.4, 'fr': 2.0, 'ra': 1.9, 'ac': 1.88, 'th': 1.79, 'pa': 1.61, 'u': 1.58, 'np': 1.55, 'pu': 1.53}
 class Molecule():
     """
     Represents a Molecule from a calculation.
@@ -211,26 +213,38 @@ class Molecule():
         """
         self.geometry = self.geometry[reindex, :]
         self.atom_ids = [self.atom_ids[i] for i in reindex]
+        
+        # Reset adjacency for new index order.
+        if hasattr(self, 'adjacency'):
+            self.set_adjacency()
 
-    # def set_adjacency(self, d_tol=2.0):
-    #     """
-    #     Set adjacency matrix for the bond topology of the molecule.
+    def _calc_covr(self, atom_i, atom_j):
+        return (__COVALENT_RADII__[atom_i.lower()]
+                + __COVALENT_RADII__[atom_j.lower()])
 
-    #     A distance metric is used to locate possible bonds.
-    #     Set adjacency matrix for the bond topology of a molecule from the geometry (cartesian coordinates) - uses simple distance metric to work out where a bond may be
-    #     Sets class attributes:
-    #      adjacency: :class:`numpy array` - dim: num. of atoms x num. of atoms; entries are 1 for an edge (bond)
-    #     Update would use the vdws of the atoms to work out the bonding distances.
-    #     """
+    def set_adjacency(self, dist_factor=1.4):
+        """
+        Set adjacency matrix where 1 shows covalent bonds.
 
-    #     # Initialise variables
-    #     self.adjacency = np.zeros((len(self.geom), len(self.geom)))
-
-    #     # Calculates distance between atoms and if smaller than the distance tolerence a bond is assumed (matrix entry set to 1)
-    #     for i, atom_i in enumerate(self.geom):
-    #         for j, atom_j in enumerate(self.geom[i+1:]):
-    #             self.adjacency[i, j+i+1] =  (geom.calc_dist(atom_i, atom_j) < distance)
-    #     self.adjacency += self.adjacency.transpose()
+        Parameters
+        ----------
+        dist_factor : :class:`float`
+            Scale factor for sum of covalent radii.
+        """
+        # Calculate distance matrix.
+        self.distance = scipy.spatial.distance_matrix(self.geometry, 
+                                                      self.geometry)
+        
+        # Create threshold matrix.
+        dist_tol = np.zeros((self.atom_number, self.atom_number))
+        for i in range(self.atom_number):
+            for j in range(self.atom_number):
+                dist_tol[i, j] = self._calc_covr(self.atom_ids[i], 
+                                                 self.atom_ids[j])*dist_factor
+        
+        # Set adjacency matrix.
+        self.adjacency = (self.distance < dist_tol).astype(int)
+        
 
 
 
