@@ -222,6 +222,12 @@ class Molecule():
         return (__COVALENT_RADII__[atom_i.lower()]
                 + __COVALENT_RADII__[atom_j.lower()])
 
+    def set_distance(self):
+        """Set distance matrix."""
+        # Calculate distance matrix.
+        self.distance = scipy.spatial.distance_matrix(self.geometry, 
+                                                      self.geometry)
+
     def set_adjacency(self, dist_factor=1.4):
         """
         Set adjacency matrix where 1 shows covalent bonds.
@@ -231,10 +237,10 @@ class Molecule():
         dist_factor : :class:`float`
             Scale factor for sum of covalent radii.
         """
-        # Calculate distance matrix.
-        self.distance = scipy.spatial.distance_matrix(self.geometry, 
-                                                      self.geometry)
-        
+        # Calculate distance matrix if not already set.
+        if not hasattr(self, 'distance'):
+            self.set_distance()
+
         # Create threshold matrix.
         dist_tol = np.zeros((self.atom_number, self.atom_number))
         for i in range(self.atom_number):
