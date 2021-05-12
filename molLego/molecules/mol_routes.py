@@ -320,7 +320,7 @@ def reaction_to_dataframe(reaction, save=None, mol_names=None,
 
     # Get path indexes for data frame from path step names.
     path_index = reaction.get_path_step_names(path_indexes)
-    print(path_index)
+    
     # Create data frame representations.
     for i, path_df_rep in enumerate(reaction.get_df_repr(path_indexes)):
         path_df = pd.DataFrame(list(path_df_rep.values()), index=path_index[i])

@@ -224,7 +224,6 @@ class Molecule():
 
     def set_distance(self):
         """Set distance matrix."""
-        # Calculate distance matrix.
         self.distance = scipy.spatial.distance_matrix(self.geometry, 
                                                       self.geometry)
 
