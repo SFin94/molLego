@@ -151,7 +151,7 @@ def calc_relative(molecule_df, quantities=None, mol_zero=None):
     # Find zero value for quantities and set other values relative.
     for q in quantities:
         if mol_zero is not None:
-            zero = molecule_df[q, mol_zero]
+            zero = molecule_df.loc[mol_zero, q]
         else:
             zero = molecule_df[q].min()
         molecule_df['relative '+q] = molecule_df[q] - zero
