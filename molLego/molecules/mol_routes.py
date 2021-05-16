@@ -269,7 +269,7 @@ def construct_reaction(system_file, parser, molecule_type=Molecule):
         neighbour_indexes.append(step_indexes)
 
     # Initialise reaction from system.
-    return Reaction(molecules, neighbour_indexes, mol_names)
+    return Reaction(molecules, mol_names, neighbours=neighbour_indexes)
 
 
 def reaction_to_dataframe(reaction, save=None, mol_names=None,

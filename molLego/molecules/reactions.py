@@ -28,7 +28,7 @@ class Reaction():
 
     """
 
-    def __init__(self, reaction_steps, neighbours, step_names):
+    def __init__(self, reaction_steps, step_names, neighbours=[]):
         """
         Initialise a Molecule from calculation output file.
 
@@ -211,7 +211,7 @@ class Reaction():
                 paths.append(step)
         return paths
 
-    def construct_reaction_paths(self, neighbour_indexes):
+    def construct_reaction_paths(self, neighbour_indexes=[]):
         """
         Construct reaction paths made of the reaction step Molecules.
 
@@ -228,6 +228,10 @@ class Reaction():
             reaction system.
 
         """
+        # If no neighbours passed then empty reaction paths returned.
+        if not neighbour_indexes:
+            return neighbour_indexes
+            
         # Set adjacency matrix from neighbour list.    
         adjacency = np.zeros((self.num_steps, self.num_steps))
         for node, edge_set in enumerate(neighbour_indexes):
