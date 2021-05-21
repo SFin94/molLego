@@ -296,11 +296,11 @@ def reaction_to_dataframe(reaction, save=None, mol_names=None,
         [default: ``None``] If ``None`` then returns all.
         Can be single `int` to call name for single reaction path.
 
-    path_zero : :class:`str` or :class:`int`
+    path_zero : :class:`list` of `str`/`int`
         [Default=None]
-        Reaction step to calculate values relative too. 
-        File name or?
-        Or `int` index of Molecule in mols list.
+        Reaction steps to calculate values relative too.
+        Either reaction step name or index of Molecule 
+        in reaction steps list.
         If ``None`` relative values calculated w.r.t. lowest
         value for each quantity.
 
@@ -325,7 +325,7 @@ def reaction_to_dataframe(reaction, save=None, mol_names=None,
     for i, path_df_rep in enumerate(reaction.get_df_repr(path_indexes)):
         path_df = pd.DataFrame(list(path_df_rep.values()), index=path_index[i])
         path_df['rx'] = list(path_df_rep.keys())
-        path_df = calc_relative(path_df, path_zero[i])
+        path_df = calc_relative(path_df, mol_zero=path_zero[i])
 
         # Add to full reaction profile dataframe.
         reaction_profile_df = reaction_profile_df.append(path_df)
