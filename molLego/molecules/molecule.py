@@ -250,6 +250,29 @@ class Molecule():
         # Set adjacency matrix.
         self.adjacency = (self.distance < dist_tol).astype(int)
         
-
+    def to_xyz(self, file_name=None):
+        """
+        Write xyz file of molecule.
+        
+        Parameters
+        ----------
+        file_name : :class:`str`
+            Output file name/path. Optional.
+            [Default: ``None``] If ``None`` then uses molecule input
+            file name with .xyz extension.
+        """
+        if file_name is None:
+            file_name = self.parser.file_name.split('/')[-1].split('.')[0] + '.xyz'
+        if file_name.split('.')[-1] != 'xyz':
+            file_name += '.xyz'
+        
+        # Write xyz file.
+        with open(file_name, "w+") as out_file:
+            print(self.atom_number, file=out_file)
+            print(f"Structure of {file_name} from {self.parser.file_name}", file=out_file)
+            for i, atom in enumerate(self.geometry):
+                print(f"{self.atom_ids[i]:<4}{atom[0]:>10f}{atom[1]:>10f}{atom[2]:>10f}",
+                    file=out_file)
+                
 
 
