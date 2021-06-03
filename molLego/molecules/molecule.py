@@ -2,6 +2,7 @@
 import sys
 import numpy as np
 import scipy
+import networkx as nx
 # from rdkit.Chem import GetPeriodicTable
 import molLego.utilities.geom as geom
 
@@ -221,6 +222,81 @@ class Molecule():
     def _calc_covr(self, atom_i, atom_j):
         return (__COVALENT_RADII__[atom_i.lower()]
                 + __COVALENT_RADII__[atom_j.lower()])
+
+    def _find_paths(self, start_node, mol_graph):
+        """Find paths in graph from start node by depth first search."""
+        path = [start_node]
+        molecule_paths = []
+        for edge in nx.dfs_edges(mol_graph, source=start_node):
+            if edge[0] == start_node:
+                molecule_paths.append(path)
+                path = [edge[1]]
+            else:
+                path.append(edge[1])
+        molecule_paths.append(path)
+        return molecule_paths
+
+    def _stack_paths(self, molecule_paths):
+        """Set index list of molecule paths from longest to shortest."""
+        new_index = []
+        # Stack paths in order of length for new index list.
+        while molecule_paths:
+            path_lengths = [len(path) for path in molecule_paths]
+            next_path = path_lengths.index(min(path_lengths))
+            new_index.extend(molecule_paths.pop(next_path))
+        return new_index
+
+    def get_bonds(self):
+        """
+        Compute bond list in molecule from adjacency matrix.
+
+        Returns
+        -------
+        :numpy:`array`
+            List of bonds in terms of atom indexes.
+        
+        """
+        if not hasattr(self, 'adjacency'):
+            self.set_adjacency()
+
+        # Find all non zero entries and return as tuples.
+        return np.transpose(np.nonzero(self.adjacency))
+
+    def index_by_paths(self, start_node=0):
+        """
+        Reindex a molecule using order of paths from a starting node.
+
+        Parameters
+        ----------
+        molecule: `list of :molLego:`Molecule``
+            List of Molecules to be reindexed.
+        start_node: `int`
+            The index (0 index) of the starting atom to use in the 
+            reference molecule. 
+
+        """
+        # Get bond list for graph edges.
+        bonds = self.get_bonds()
+
+        # Initialise graph.
+        mol_graph = nx.Graph()
+        mol_graph.add_edges_from(bonds)
+
+        # Initialise index list.
+        new_index = []
+        while len(new_index) < len(self.atom_ids):
+            # Set new start atom if disconnected graph or new mol.
+            if len(new_index) > 0:
+                # Find atoms not in index and set new start node.
+                start_set = set(range(len(self.atom_ids))).difference(set(new_index))
+                start_node = list(start_set)[0]
+
+            # Find paths in molecule and add to new index list.
+            molecule_paths = self._find_paths(start_node, mol_graph)
+            new_index += self._stack_paths(molecule_paths)
+
+        # Reindex molecule.        
+        self.reindex_molecule(new_index)
 
     def set_distance(self):
         """Set distance matrix."""
