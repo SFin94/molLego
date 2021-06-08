@@ -259,7 +259,6 @@ class GaussianLog(OutputParser):
         if (hasattr(self, 'method')):
             if ('mp2' in self.method.lower()):
                 job_property_flags['energy'] = 'EUMP2'
-
         return job_property_flags
 
     def _pull_atom_ids(self):
@@ -856,7 +855,13 @@ class GaussianLog(OutputParser):
             'geom': 'Standard orientation',
             'opt': 'Optimized Parameters'
         }
-        
+
+        # Change energy flag if MP2.
+        if (hasattr(self, 'method')):
+            if ('mp2' in self.method.lower()):
+                prop_flags['energy'] = 'EUMP2'
+                pull_functions['energy'] = self._pull_mp2_energy
+
         # Iterate over log file and parse properties.
         with open(self.file_name, 'r') as infile:
             for line in infile:
