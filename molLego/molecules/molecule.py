@@ -311,9 +311,8 @@ class Molecule():
         dist_factor : :class:`float`
             Scale factor for sum of covalent radii.
         """
-        # Calculate distance matrix if not already set.
-        if not hasattr(self, 'distance'):
-            self.set_distance()
+        # Calculate distance matrix.
+        self.set_distance()
 
         # Create threshold matrix.
         dist_tol = np.zeros((self.atom_number, self.atom_number))
