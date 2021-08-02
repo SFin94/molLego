@@ -194,7 +194,8 @@ class Molecule():
 
         Example
         -------
-        Mapping is a list of the new positions for each atom.
+        Mapping is a list where the current atom id is placed in the new position 
+        that the atom will be moved to.
         Indexes start at 0.
 
         For a molecule with 4 atoms with start order: [H C H O],
@@ -268,8 +269,6 @@ class Molecule():
 
         Parameters
         ----------
-        molecule: `list of :molLego:`Molecule``
-            List of Molecules to be reindexed.
         start_node: `int`
             The index (0 index) of the starting atom to use in the 
             reference molecule. 
@@ -325,6 +324,7 @@ class Molecule():
         
         # Set adjacency matrix.
         self.adjacency = (self.distance < dist_tol).astype(int)
+        np.fill_diagonal(self.adjacency, 0)
         
     def to_xyz(self, file_name=None):
         """
